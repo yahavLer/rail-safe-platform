@@ -1,0 +1,10 @@
+rootProject.name = "riskServer"
+
+include(
+        "common_domain",
+        "user_service",
+        "risk_service",
+        "organization_service",
+        "task_service",
+        "imageAnalysis-AI_service"
+)

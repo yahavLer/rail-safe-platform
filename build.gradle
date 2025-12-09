@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+}
+
+group = 'safe'
+version = '0.0.1-SNAPSHOT'
+
+
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
+}
