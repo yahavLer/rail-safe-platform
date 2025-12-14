@@ -4,5 +4,13 @@ public enum RiskStatus {
     OPEN,
     MITIGATION_PLANNED,
     IN_PROGRESS,
-    CLOSED
+    CLOSED,
+    DRAFT
 }
+/*
+public enum RiskStatus {
+    DRAFT,
+    IN_TREATMENT,
+    CLOSED,
+    REDUCED
+}*/

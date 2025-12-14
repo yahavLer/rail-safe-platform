@@ -1,14 +1,20 @@
 package safe.organization_service.controller;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+
+import org.springframework.validation.annotation.Validated;
 import safe.organization_service.boundary.*;
 import safe.organization_service.service.OrganizationService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
-
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 @RestController
 @RequestMapping("/api/organizations")
+@Validated
 /**
  * REST controller for organization configuration:
  * - Create organization (initializes risk matrix)
@@ -42,7 +48,12 @@ public class OrganizationController {
     @PatchMapping("/{orgId}/risk-matrix/frequency/{level}")
     public LevelDefinitionBoundary updateFrequencyDescription(
             @PathVariable UUID orgId,
-            @PathVariable int level,
+            @Parameter(
+                    description = "Frequency level (1..4). 1=נדיר, 2=לא סביר, 3=תדירות נמוכה, 4=מדי פעם",
+                    schema = @Schema(type = "integer", allowableValues = {"1","2","3","4"})
+            )
+            @PathVariable @Min(1) @Max(4) int level,
+
             @Valid @RequestBody UpdateDescriptionBoundary input
     ) {
         return service.updateFrequencyDescription(orgId, level, input);
@@ -52,7 +63,11 @@ public class OrganizationController {
     @PatchMapping("/{orgId}/risk-matrix/severity/{level}")
     public LevelDefinitionBoundary updateSeverityDescription(
             @PathVariable UUID orgId,
-            @PathVariable int level,
+            @Parameter(
+                    description = "Severity level (1..4). 1=זניח, 2=בינוני גבולי, 3=קריטי גבוה, 4=אסון",
+                    schema = @Schema(type = "integer", allowableValues = {"1","2","3","4"})
+            )
+            @PathVariable @Min(1) @Max(4) int level,
             @Valid @RequestBody UpdateDescriptionBoundary input
     ) {
         return service.updateSeverityDescription(orgId, level, input);
