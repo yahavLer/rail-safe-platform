@@ -1,138 +1,163 @@
 package safe.user_service.serviceImpl;
 
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import safe.user_service.dto.OrganizationMembershipDto;
-import safe.user_service.dto.UserCreateRequest;
-import safe.user_service.dto.UserResponse;
-import safe.user_service.dto.UserUpdateRequest;
-import safe.user_service.entities.OrganizationMembershipEntity;
+import safe.user_service.boundary.*;
 import safe.user_service.entities.UserEntity;
-import safe.user_service.enums.OrgRole;
-import safe.user_service.repositories.OrganizationMembershipRepository;
+import safe.user_service.enums.UserRole;
 import safe.user_service.repositories.UserRepository;
 import safe.user_service.servicesInterfaces.UserService;
-
+import safe.user_service.exception.BadRequestException;
+import safe.user_service.exception.UserNotFoundException;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
+/**
+ * Default implementation of UserService.
+ * Contains business rules (role scope validation) + persistence operations.
+ */
 public class UserServiceImpl implements UserService {
+    /** Repository dependency used to access the database */
+    private final UserRepository repo;
 
-    private final UserRepository userRepository;
-    private final OrganizationMembershipRepository membershipRepository;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
-    public UserServiceImpl(UserRepository userRepository,
-                           OrganizationMembershipRepository membershipRepository) {
-        this.userRepository = userRepository;
-        this.membershipRepository = membershipRepository;
+    public UserServiceImpl(UserRepository repo) {
+        this.repo = repo;
     }
 
     @Override
-    public UserResponse createUser(UserCreateRequest request) {
-        if (userRepository.existsByEmailIgnoreCase(request.getEmail())) {
-            throw new IllegalArgumentException("User with this email already exists");
+    public UserBoundary create(CreateUserBoundary input) {
+        // Validate organizational scope matches role requirements
+        validateRoleScope(input.getRole(), input.getDivisionId(), input.getDepartmentId());
+
+        // Prevent duplicate external identity (if provided)
+        if (input.getExternalAuthId() != null && repo.findByExternalAuthId(input.getExternalAuthId()).isPresent()) {
+            throw new BadRequestException("externalAuthId already exists");
         }
 
-        UserEntity user = new UserEntity();
-        user.setEmail(request.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
-        user.setPhone(request.getPhone());
-        user.setSystemRole(request.getSystemRole());
+        // Build entity from request DTO
+        UserEntity e = new UserEntity();
+        e.setExternalAuthId(input.getExternalAuthId());
+        e.setOrgId(input.getOrgId());
+        e.setDivisionId(input.getDivisionId());
+        e.setDepartmentId(input.getDepartmentId());
+        e.setRole(input.getRole());
+        e.setFirstName(input.getFirstName());
+        e.setLastName(input.getLastName());
+        e.setEmail(input.getEmail());
 
-        // אם נשלח ארגון – ניצור Membership ראשוני
-        if (request.getOrganizationId() != null && request.getOrgRole() != null) {
-            OrganizationMembershipEntity membership = new OrganizationMembershipEntity();
-            membership.setUser(user);
-            membership.setOrganizationId(request.getOrganizationId());
-            membership.setOrgRole(request.getOrgRole());
-            membership.setPrimaryForUser(true);
-            user.getMemberships().add(membership);
-        }
-
-        UserEntity saved = userRepository.save(user);
-        return toDto(saved);
+        // Save + map to response DTO
+        return UserMapper.toBoundary(repo.save(e));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public UserResponse getUser(Long id) {
-        UserEntity user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        return toDto(user);
+    public UserBoundary getById(UUID id) {
+        UserEntity e = repo.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        return UserMapper.toBoundary(e);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserResponse> getUsersByOrganization(Long organizationId) {
-        List<OrganizationMembershipEntity> memberships =
-                membershipRepository.findByOrganizationId(organizationId);
-
-        return memberships.stream()
-                .map(OrganizationMembershipEntity::getUser)
-                .distinct()
-                .map(this::toDto)
-                .toList();
+    public UserBoundary getByExternalAuthId(String externalAuthId) {
+        UserEntity e = repo.findByExternalAuthId(externalAuthId)
+                .orElseThrow(() -> new UserNotFoundException("externalAuthId=" + externalAuthId));
+        return UserMapper.toBoundary(e);
     }
 
     @Override
-    public UserResponse updateUser(Long id, UserUpdateRequest request) {
-        UserEntity user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-        if (request.getFirstName() != null) {
-            user.setFirstName(request.getFirstName());
-        }
-        if (request.getLastName() != null) {
-            user.setLastName(request.getLastName());
-        }
-        if (request.getPhone() != null) {
-            user.setPhone(request.getPhone());
-        }
-        if (request.getActive() != null) {
-            user.setActive(request.getActive());
-        }
-        if (request.getSystemRole() != null) {
-            user.setSystemRole(request.getSystemRole());
+    @Transactional(readOnly = true)
+    public List<UserBoundary> list(UUID orgId, UUID divisionId, UUID departmentId) {
+        // This method supports filtering by organization units.
+        if (orgId == null) {
+            // אפשר גם לזרוק BadRequest, אבל לפעמים נוח למנהלת מערכת לראות הכל
+            return repo.findAll().stream().map(UserMapper::toBoundary).toList();
         }
 
-        return toDto(user);
+        if (divisionId == null) {
+            return repo.findByOrgId(orgId).stream().map(UserMapper::toBoundary).toList();
+        }
+
+        if (departmentId == null) {
+            return repo.findByOrgIdAndDivisionId(orgId, divisionId).stream().map(UserMapper::toBoundary).toList();
+        }
+
+        return repo.findByOrgIdAndDivisionIdAndDepartmentId(orgId, divisionId, departmentId)
+                .stream().map(UserMapper::toBoundary).toList();
     }
 
     @Override
-    public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+    public UserBoundary update(UUID id, UpdateUserBoundary input) {
+        UserEntity e = repo.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+
+        // Apply only provided fields (PATCH semantics)
+        if (input.getFirstName() != null) e.setFirstName(input.getFirstName());
+        if (input.getLastName() != null) e.setLastName(input.getLastName());
+        if (input.getEmail() != null) e.setEmail(input.getEmail());
+        if (input.getActive() != null) e.setActive(input.getActive());
+
+        return UserMapper.toBoundary(repo.save(e));
     }
 
-    // ======== Mapper ========
+    @Override
+    public UserBoundary updateRole(UUID id, UpdateRoleBoundary input) {
+        UserEntity e = repo.findById(id).orElseThrow(() -> new UserNotFoundException(id));
 
-    private UserResponse toDto(UserEntity entity) {
-        UserResponse dto = new UserResponse();
-        dto.setId(entity.getId());
-        dto.setEmail(entity.getEmail());
-        dto.setFirstName(entity.getFirstName());
-        dto.setLastName(entity.getLastName());
-        dto.setPhone(entity.getPhone());
-        dto.setActive(entity.isActive());
-        dto.setSystemRole(entity.getSystemRole());
+        // Validate role is compatible with existing org scope
+        validateRoleScope(input.getRole(), e.getDivisionId(), e.getDepartmentId());
+        e.setRole(input.getRole());
 
-        List<OrganizationMembershipDto> memberships = entity.getMemberships().stream()
-                .map(m -> {
-                    OrganizationMembershipDto md = new OrganizationMembershipDto();
-                    md.setOrganizationId(m.getOrganizationId());
-                    md.setOrgRole(m.getOrgRole());
-                    md.setPrimaryForUser(m.isPrimaryForUser());
-                    return md;
-                })
-                .collect(Collectors.toList());
+        return UserMapper.toBoundary(repo.save(e));
+    }
 
-        dto.setMemberships(memberships);
-        return dto;
+    @Override
+    public UserBoundary assignOrgUnit(UUID id, AssignOrgUnitBoundary input) {
+        UserEntity e = repo.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+
+        // Move user to different org/division/department
+        e.setOrgId(input.getOrgId());
+        e.setDivisionId(input.getDivisionId());
+        e.setDepartmentId(input.getDepartmentId());
+
+        // Ensure role still makes sense after moving
+        validateRoleScope(e.getRole(), e.getDivisionId(), e.getDepartmentId());
+
+        return UserMapper.toBoundary(repo.save(e));
+    }
+
+    @Override
+    public void delete(UUID id) {
+        if (!repo.existsById(id)) {
+            throw new UserNotFoundException(id);
+        }
+        repo.deleteById(id);
+    }
+
+    /**
+     * Validates that the user role matches the organizational scope provided.
+     * This prevents inconsistent states (e.g., department manager without department).
+     */
+    private void validateRoleScope(UserRole role, UUID divisionId, UUID departmentId) {
+        switch (role) {
+            case CHIEF_RISK_MANAGER -> {
+                // No division/department required
+            }
+            case DIVISION_RISK_MANAGER -> {
+                if (divisionId == null) {
+                    throw new BadRequestException("DIVISION_RISK_MANAGER חייב divisionId");
+                }
+                // departmentId לא חובה. אם תרצי לאסור:
+                // if (departmentId != null) throw new BadRequestException("DIVISION manager cannot have departmentId");
+            }
+            case DEPARTMENT_RISK_MANAGER -> {
+                if (divisionId == null || departmentId == null) {
+                    throw new BadRequestException("DEPARTMENT_RISK_MANAGER חייב divisionId וגם departmentId");
+                }
+            }
+            case EMPLOYEE -> {
+                // Usually only org is required; division/department are optional
+            }
+        }
     }
 }

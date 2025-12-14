@@ -1,20 +1,29 @@
 package safe.user_service.servicesInterfaces;
 
-import safe.user_service.dto.UserCreateRequest;
-import safe.user_service.dto.UserUpdateRequest;
-import safe.user_service.dto.UserResponse;
+import safe.user_service.boundary.*;
 
 import java.util.List;
 
+import java.util.UUID;
+
+/**
+ * Business-facing interface for user operations.
+ * Controllers depend on this interface (clean architecture).
+ */
 public interface UserService {
+    UserBoundary create(CreateUserBoundary input);
 
-    UserResponse createUser(UserCreateRequest request);
+    UserBoundary getById(UUID id);
 
-    UserResponse getUser(Long id);
+    UserBoundary getByExternalAuthId(String externalAuthId);
 
-    List<UserResponse> getUsersByOrganization(Long organizationId);
+    List<UserBoundary> list(UUID orgId, UUID divisionId, UUID departmentId);
 
-    UserResponse updateUser(Long id, UserUpdateRequest request);
+    UserBoundary update(UUID id, UpdateUserBoundary input);
 
-    void deleteUser(Long id);
+    UserBoundary updateRole(UUID id, UpdateRoleBoundary input);
+
+    UserBoundary assignOrgUnit(UUID id, AssignOrgUnitBoundary input);
+
+    void delete(UUID id);
 }

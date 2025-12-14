@@ -1,11 +1,7 @@
 package safe.user_service.controllers;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
-import safe.user_service.dto.UserCreateRequest;
-import safe.user_service.dto.UserResponse;
-import safe.user_service.dto.UserUpdateRequest;
+import safe.user_service.boundary.*;
 import safe.user_service.servicesInterfaces.UserService;
 
 import java.util.List;
@@ -13,45 +9,71 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users")
+/**
+ * REST controller exposing HTTP endpoints for user management.
+ * Delegates business logic to UserService.
+ */
 public class UserController {
+    /** Service dependency that holds business logic */
+    private final UserService service;
 
-    private final UserService userService;
-
-    public UserController(UserService userService) {
-        this.userService = userService;
+    public UserController(UserService service) {
+        this.service = service;
     }
 
+    /** Create a new user */
     @PostMapping
-    public ResponseEntity<UserResponse> createUser(@RequestBody UserCreateRequest request) {
-        UserResponse created = userService.createUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    public UserBoundary create(@Valid @RequestBody CreateUserBoundary input) {
+        return service.create(input);
     }
 
+    /** Get a user by internal UUID */
     @GetMapping("/{id}")
-    public UserResponse getUser(@PathVariable Long id) {
-        return userService.getUser(id);
+    public UserBoundary getById(@PathVariable UUID id) {
+        return service.getById(id);
     }
 
+    /** Get a user by external auth identifier (e.g., Firebase UID) */
+    @GetMapping("/by-external/{externalAuthId}")
+    public UserBoundary getByExternalAuthId(@PathVariable String externalAuthId) {
+        return service.getByExternalAuthId(externalAuthId);
+    }
+
+
+    /**
+     * List users with optional filtering by org/division/department.
+     * Example: /api/users?orgId=...&divisionId=...&departmentId=...
+     */
     @GetMapping
-    public List<UserResponse> getUsersByOrganization(
-            @RequestParam(name = "organizationId", required = false) Long organizationId
+    public List<UserBoundary> list(
+            @RequestParam(required = false) UUID orgId,
+            @RequestParam(required = false) UUID divisionId,
+            @RequestParam(required = false) UUID departmentId
     ) {
-        if (organizationId == null) {
-            // בעתיד אפשר להחזיר את כל המשתמשים, כרגע נשאיר פשוט:
-            throw new IllegalArgumentException("organizationId is required for this endpoint");
-        }
-        return userService.getUsersByOrganization(organizationId);
+        return service.list(orgId, divisionId, departmentId);
     }
 
-    @PutMapping("/{id}")
-    public UserResponse updateUser(@PathVariable Long id,
-                                   @RequestBody UserUpdateRequest request) {
-        return userService.updateUser(id, request);
+    /** Update basic user details (PATCH semantics) */
+    @PatchMapping("/{id}")
+    public UserBoundary update(@PathVariable UUID id, @Valid @RequestBody UpdateUserBoundary input) {
+        return service.update(id, input);
     }
 
+    /** Update user role only */
+    @PatchMapping("/{id}/role")
+    public UserBoundary updateRole(@PathVariable UUID id, @Valid @RequestBody UpdateRoleBoundary input) {
+        return service.updateRole(id, input);
+    }
+
+    /** Assign/move user across organization units */
+    @PatchMapping("/{id}/org-unit")
+    public UserBoundary assignOrgUnit(@PathVariable UUID id, @Valid @RequestBody AssignOrgUnitBoundary input) {
+        return service.assignOrgUnit(id, input);
+    }
+
+    /** Delete a user by UUID */
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
+    public void delete(@PathVariable UUID id) {
+        service.delete(id);
     }
 }

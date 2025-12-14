@@ -3,12 +3,26 @@ package safe.user_service.repositories;
 import org.springframework.data.jpa.repository.JpaRepository;
 import safe.user_service.entities.UserEntity;
 
-import java.lang.Long;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
-public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
-    Optional<UserEntity> findByEmailIgnoreCase(String email);
+/**
+ * Data access layer for users table.
+ * Spring Data generates implementations automatically.
+ */
+public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
-    boolean existsByEmailIgnoreCase(String email);
+    /** Find by external identity (e.g., Firebase UID). */
+    Optional<UserEntity> findByExternalAuthId(String externalAuthId);
+
+    /** List all users in an organization. */
+    List<UserEntity> findByOrgId(UUID orgId);
+
+    /** List all users in a division. */
+    List<UserEntity> findByOrgIdAndDivisionId(UUID orgId, UUID divisionId);
+
+    /** List all users in a department. */
+    List<UserEntity> findByOrgIdAndDivisionIdAndDepartmentId(UUID orgId, UUID divisionId, UUID departmentId);
 }
