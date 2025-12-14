@@ -1,7 +1,6 @@
 rootProject.name = "riskServer"
 
 include(
-        "common_domain",
         "user_service",
         "risk_service",
         "organization_service",
