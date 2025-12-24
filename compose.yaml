@@ -109,10 +109,16 @@ services:
     container_name: railsafe-task-service
     depends_on:
       - postgres
+      - rabbitmq
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/railsafe
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
+
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
     ports:
       - "8084:8084"
     networks:
@@ -125,8 +131,13 @@ services:
       dockerfile: imageAnalysis-AI_service/Dockerfile
     container_name: railsafe-image-ai-service
     depends_on:
+      - postgres
       - rabbitmq
     environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/railsafe
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=guest

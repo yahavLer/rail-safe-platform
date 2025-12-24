@@ -12,12 +12,12 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
-  hikari:
-    max-lifetime: 300000
-    idle-timeout: 300000
-    connection-timeout: 30000
-    maximum-pool-size: 10
-    minimum-idle: 2
+    hikari:
+      max-lifetime: 300000
+      idle-timeout: 300000
+      connection-timeout: 30000
+      maximum-pool-size: 10
+      minimum-idle: 2
 
   jpa:
     hibernate:
@@ -35,5 +35,5 @@ spring:
     password: ${SPRING_RABBITMQ_PASSWORD:guest}
 
 server:
-port: 8084
-address: 0.0.0.0
+  port: 8084
+  address: 0.0.0.0
