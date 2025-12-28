@@ -2,6 +2,7 @@ package safe.user_service.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -10,19 +11,21 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
+        return http
+                .cors(cors -> {}) // ✅ חשוב כדי ש-CORS יעבוד עם Security
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // לאפשר swagger בלי התחברות
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/v3/api-docs/**"
-                        ).permitAll()
-                        // שאר ה־API – נשאיר כרגע פתוח לצורך פיתוח
-                        .anyRequest().permitAll()
-                );
+                        // ✅ לאפשר preflight
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-        return http.build();
+                        // Swagger
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                        // שאר הבקשות
+                        .anyRequest().permitAll()
+                )
+                .httpBasic(b -> b.disable())
+                .formLogin(f -> f.disable())
+                .build();
     }
 }

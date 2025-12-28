@@ -114,6 +114,7 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Override
     public CategoryBoundary createCategory(UUID orgId, CreateCategoryBoundary input) {
         OrganizationEntity org = orgRepo.findById(orgId).orElseThrow(() -> new OrganizationNotFoundException(orgId));
+        int nextOrder = categoryRepo.findMaxDisplayOrderByOrganizationId(orgId).orElse(0) + 1;
 
         validateCategoryCode(input.getCode());
 
@@ -125,7 +126,7 @@ public class OrganizationServiceImpl implements OrganizationService {
         c.setOrganization(org);
         c.setCode(input.getCode());
         c.setName(input.getName());
-        c.setDisplayOrder(input.getDisplayOrder());
+        c.setDisplayOrder(nextOrder);
         c.setActive(true);
 
         return toCategoryBoundary(categoryRepo.save(c));
