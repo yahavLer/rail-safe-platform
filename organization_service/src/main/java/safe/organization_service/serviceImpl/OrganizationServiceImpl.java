@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -115,16 +116,17 @@ public class OrganizationServiceImpl implements OrganizationService {
     public CategoryBoundary createCategory(UUID orgId, CreateCategoryBoundary input) {
         OrganizationEntity org = orgRepo.findById(orgId).orElseThrow(() -> new OrganizationNotFoundException(orgId));
         int nextOrder = categoryRepo.findMaxDisplayOrderByOrganizationId(orgId).orElse(0) + 1;
+        String normalizedCode = input.getCode().trim().toUpperCase(Locale.ROOT);
 
-        validateCategoryCode(input.getCode());
+        validateCategoryCode(normalizedCode);
 
-        if (categoryRepo.findByOrganization_IdAndCode(orgId, input.getCode()).isPresent()) {
-            throw new BadRequestException("Category code already exists: " + input.getCode());
+        if (categoryRepo.findByOrganization_IdAndCode(orgId, normalizedCode).isPresent()) {
+            throw new BadRequestException("Category code already exists: " + normalizedCode);
         }
 
         RiskCategoryDefinitionEntity c = new RiskCategoryDefinitionEntity();
         c.setOrganization(org);
-        c.setCode(input.getCode());
+        c.setCode(normalizedCode);
         c.setName(input.getName());
         c.setDisplayOrder(nextOrder);
         c.setActive(true);
@@ -218,9 +220,9 @@ public class OrganizationServiceImpl implements OrganizationService {
     }
 
     private void validateCategoryCode(String code) {
-        // Typical codes: GH1..GH21 (you can relax this later)
-        if (code == null || !code.matches("^GH([1-9]|1\\d|2[0-1])$")) {
-            throw new BadRequestException("Category code must match GH1..GH21");
+        // 1..10 chars, starts with letter, allowed: A-Z 0-9 _ -
+        if (code == null || !code.matches("^[A-Za-z][A-Za-z0-9_-]{0,9}$")) {
+            throw new BadRequestException("Category code must be 1-10 chars, start with a letter, and contain only letters/digits/_/-");
         }
     }
 
