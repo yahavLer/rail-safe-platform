@@ -10,7 +10,9 @@ import safe.risk_service.enums.RiskStatus;
 import safe.risk_service.repository.RiskRepository;
 import safe.risk_service.repository.RiskSpecifications;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -63,20 +65,62 @@ public class RiskServiceImpl implements safe.risk_service.service.RiskService {
     }
 
     @Override
-    public List<RiskBoundary> list(UUID orgId, UUID divisionId, UUID departmentId, UUID riskManagerUserId,
-                                   String categoryCode, RiskStatus status, RiskClassification classification,
-                                   Integer minScore, Integer maxScore) {
+    public List<RiskBoundary> list(UUID orgId,
+                                   UUID divisionId,
+                                   UUID departmentId,
+                                   UUID riskManagerUserId,
+                                   String categoryCode,
+                                   RiskStatus status,
+                                   RiskClassification classification,
+                                   Integer minScore,
+                                   Integer maxScore) {
 
-        Specification<RiskEntity> spec = Specification.where(RiskSpecifications.orgId(orgId))
-                .and(divisionId != null ? RiskSpecifications.divisionId(divisionId) : null)
-                .and(departmentId != null ? RiskSpecifications.departmentId(departmentId) : null)
-                .and(riskManagerUserId != null ? RiskSpecifications.riskManagerUserId(riskManagerUserId) : null)
-                .and(categoryCode != null ? RiskSpecifications.categoryCode(categoryCode) : null)
-                .and(status != null ? RiskSpecifications.status(status) : null)
-                .and(classification != null ? RiskSpecifications.classification(classification) : null)
-                .and(RiskSpecifications.scoreBetween(minScore, maxScore));
+        if (orgId == null) {
+            throw new IllegalArgumentException("orgId is required");
+        }
 
-        return repo.findAll(spec).stream().map(this::toBoundary).toList();
+        // חשוב: לא לעשות and(null) אף פעם
+        Specification<RiskEntity> spec = Specification.where(RiskSpecifications.orgId(orgId));
+
+        if (divisionId != null) {
+            spec = spec.and(RiskSpecifications.divisionId(divisionId));
+        }
+
+        if (departmentId != null) {
+            spec = spec.and(RiskSpecifications.departmentId(departmentId));
+        }
+
+        if (riskManagerUserId != null) {
+            spec = spec.and(RiskSpecifications.riskManagerUserId(riskManagerUserId));
+        }
+
+        if (categoryCode != null && !categoryCode.isBlank()) {
+            spec = spec.and(RiskSpecifications.categoryCode(categoryCode));
+        }
+
+        if (status != null) {
+            spec = spec.and(RiskSpecifications.status(status));
+        }
+
+        if (classification != null) {
+            spec = spec.and(RiskSpecifications.classification(classification));
+        }
+
+        // score filters - בטוח גם אם אחד מהם null
+        if (minScore != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.greaterThanOrEqualTo(root.get("riskScore"), minScore));
+        }
+
+        if (maxScore != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.lessThanOrEqualTo(root.get("riskScore"), maxScore));
+        }
+
+        return repo.findAll(spec)
+                .stream()
+                .map(this::toBoundary)
+                .toList();
     }
 
     @Override
@@ -96,7 +140,7 @@ public class RiskServiceImpl implements safe.risk_service.service.RiskService {
         if (input.getSeverityAfter() != null) e.setSeverityAfter(input.getSeverityAfter());
         if (input.getFrequencyAfter() != null) e.setFrequencyAfter(input.getFrequencyAfter());
 
-        // Recompute if needed
+        // Recompute
         applyComputedFields(e);
 
         return toBoundary(repo.save(e));
@@ -121,8 +165,8 @@ public class RiskServiceImpl implements safe.risk_service.service.RiskService {
 
     @Override
     public Map<RiskStatus, Long> countByStatus(UUID orgId) {
-        // Simple way: fetch only org risks then count in memory (OK for MVP).
-        // Later optimize with DB GROUP BY query.
+        if (orgId == null) throw new IllegalArgumentException("orgId is required");
+
         return repo.findAll(RiskSpecifications.orgId(orgId))
                 .stream()
                 .collect(Collectors.groupingBy(RiskEntity::getStatus, Collectors.counting()));
@@ -130,6 +174,8 @@ public class RiskServiceImpl implements safe.risk_service.service.RiskService {
 
     @Override
     public Map<RiskClassification, Long> countByClassification(UUID orgId) {
+        if (orgId == null) throw new IllegalArgumentException("orgId is required");
+
         return repo.findAll(RiskSpecifications.orgId(orgId))
                 .stream()
                 .collect(Collectors.groupingBy(RiskEntity::getClassification, Collectors.counting()));
