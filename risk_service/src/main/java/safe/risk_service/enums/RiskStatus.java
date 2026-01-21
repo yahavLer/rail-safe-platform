@@ -7,10 +7,3 @@ public enum RiskStatus {
     CLOSED,
     DRAFT
 }
-/*
-public enum RiskStatus {
-    DRAFT,
-    IN_TREATMENT,
-    CLOSED,
-    REDUCED
-}*/
