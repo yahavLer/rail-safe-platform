@@ -29,7 +29,12 @@ public class AuthController {
 
     @PostMapping("/login")
     public UserBoundary login(@RequestBody @Valid LoginRequestBoundary req) {
-        UserEntity user = userRepo.findByOrgIdAndEmail(req.getOrganizationId(), req.getEmail())
+
+        if (req.getOrgId() == null || req.getEmail() == null || req.getPassword() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing fields");
+        }
+
+        UserEntity user = userRepo.findByOrgIdAndEmail(req.getOrgId(), req.getEmail())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Bad credentials"));
 
         if (!encoder.matches(req.getPassword(), user.getPasswordHash())) {
