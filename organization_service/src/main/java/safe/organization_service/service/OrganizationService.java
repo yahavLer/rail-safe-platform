@@ -22,4 +22,6 @@ public interface OrganizationService {
     List<CategoryBoundary> listCategories(UUID orgId);
     CategoryBoundary updateCategory(UUID orgId, UUID categoryId, UpdateCategoryBoundary input);
     void deleteCategory(UUID orgId, UUID categoryId);
+    List<OrganizationBoundary> listOrganizations();
+
 }

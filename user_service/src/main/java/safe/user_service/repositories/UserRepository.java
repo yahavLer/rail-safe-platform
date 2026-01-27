@@ -25,4 +25,6 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     /** List all users in a department. */
     List<UserEntity> findByOrgIdAndDivisionIdAndDepartmentId(UUID orgId, UUID divisionId, UUID departmentId);
+    Optional<UserEntity> findByOrgIdAndEmail(UUID orgId, String email);
+
 }

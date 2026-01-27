@@ -98,4 +98,8 @@ public class OrganizationController {
     public void deleteCategory(@PathVariable UUID orgId, @PathVariable UUID categoryId) {
         service.deleteCategory(orgId, categoryId);
     }
+    @GetMapping
+    public List<OrganizationBoundary> listAll() {
+        return service.listOrganizations();
+    }
 }

@@ -9,6 +9,8 @@ import safe.user_service.repositories.UserRepository;
 import safe.user_service.servicesInterfaces.UserService;
 import safe.user_service.exception.BadRequestException;
 import safe.user_service.exception.UserNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -21,9 +23,11 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
     /** Repository dependency used to access the database */
     private final UserRepository repo;
+    private final PasswordEncoder encoder;
 
-    public UserServiceImpl(UserRepository repo) {
+    public UserServiceImpl(UserRepository repo, PasswordEncoder encoder) {
         this.repo = repo;
+        this.encoder = encoder;
     }
 
     @Override
@@ -46,6 +50,8 @@ public class UserServiceImpl implements UserService {
         e.setFirstName(input.getFirstName());
         e.setLastName(input.getLastName());
         e.setEmail(input.getEmail());
+        e.setPasswordHash(encoder.encode(input.getPassword()));
+
 
         // Save + map to response DTO
         return UserMapper.toBoundary(repo.save(e));

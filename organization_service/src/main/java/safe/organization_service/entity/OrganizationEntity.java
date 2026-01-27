@@ -19,7 +19,8 @@ public class OrganizationEntity {
     /** Organization display name */
     @Column(nullable = false, length = 120)
     private String name;
-
+    @Column(name = "password_hash", nullable = true, length = 100)
+    private String passwordHash;
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -47,4 +48,7 @@ public class OrganizationEntity {
 
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+
+    public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 }

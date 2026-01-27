@@ -1,6 +1,7 @@
 package safe.organization_service.serviceImpl;
 
 
+import org.springframework.data.domain.Sort;
 import safe.organization_service.boundary.*;
 import safe.organization_service.entity.*;
 import safe.organization_service.exception.BadRequestException;
@@ -9,7 +10,7 @@ import safe.organization_service.repository.*;
 import safe.organization_service.service.OrganizationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -28,23 +29,27 @@ public class OrganizationServiceImpl implements OrganizationService {
     private final FrequencyLevelRepository freqRepo;
     private final SeverityLevelRepository sevRepo;
     private final RiskCategoryRepository categoryRepo;
+    private final PasswordEncoder passwordEncoder;
 
     public OrganizationServiceImpl(
             OrganizationRepository orgRepo,
             FrequencyLevelRepository freqRepo,
             SeverityLevelRepository sevRepo,
-            RiskCategoryRepository categoryRepo
+            RiskCategoryRepository categoryRepo,
+            PasswordEncoder passwordEncoder
     ) {
         this.orgRepo = orgRepo;
         this.freqRepo = freqRepo;
         this.sevRepo = sevRepo;
         this.categoryRepo = categoryRepo;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public OrganizationBoundary createOrganization(CreateOrganizationBoundary input) {
         OrganizationEntity org = new OrganizationEntity();
         org.setName(input.getName());
+        org.setPasswordHash(passwordEncoder.encode(input.getPassword()));
         org = orgRepo.save(org);
 
         // Create default fixed labels with empty descriptions.
@@ -257,5 +262,14 @@ public class OrganizationServiceImpl implements OrganizationService {
         b.setDisplayOrder(c.getDisplayOrder());
         b.setActive(c.isActive());
         return b;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrganizationBoundary> listOrganizations() {
+        return orgRepo.findAll(Sort.by(Sort.Direction.ASC, "name"))
+                .stream()
+                .map(this::toBoundary)
+                .toList();
     }
 }

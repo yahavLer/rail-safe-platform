@@ -71,7 +71,8 @@ public class UserEntity {
     /** Contact email (can also be used as a login identifier, depending on auth model). */
     @Column(nullable = false, length = 120)
     private String email;
-
+    @Column(name="password_hash", nullable=false, length=100)
+    private String passwordHash;
     /** Soft status flag for enabling/disabling user access. */
     @Column(nullable = false)
     private boolean active = true;
@@ -132,4 +133,12 @@ public class UserEntity {
 
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
 }
