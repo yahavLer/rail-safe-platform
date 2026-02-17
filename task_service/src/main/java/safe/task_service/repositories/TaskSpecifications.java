@@ -6,9 +6,6 @@ import safe.task_service.enums.TaskStatus;
 
 import java.util.UUID;
 
-/**
- * Dynamic query filters for tasks listing.
- */
 public class TaskSpecifications {
 
     public static Specification<TaskEntity> orgId(UUID orgId) {
@@ -27,4 +24,3 @@ public class TaskSpecifications {
         return (root, query, cb) -> cb.equal(root.get("status"), status);
     }
 }
-
