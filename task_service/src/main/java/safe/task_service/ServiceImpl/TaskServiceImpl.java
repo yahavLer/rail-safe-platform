@@ -34,7 +34,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public TaskBoundary create(CreateTaskBoundary input) {
         TaskEntity e = TaskEntity.builder()
-                .organizationId(input.getOrganizationId())
+                .orgId(input.getOrgId())
                 .riskId(input.getRiskId())
                 .assigneeUserId(input.getAssigneeUserId())
                 .title(input.getTitle())
@@ -56,10 +56,17 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public List<TaskBoundary> list(UUID orgId, UUID riskId, UUID assigneeUserId, TaskStatus status) {
 
-        Specification<TaskEntity> spec = Specification.where(TaskSpecifications.orgId(orgId))
-                .and(riskId != null ? TaskSpecifications.riskId(riskId) : null)
-                .and(assigneeUserId != null ? TaskSpecifications.assignee(assigneeUserId) : null)
-                .and(status != null ? TaskSpecifications.status(status) : null);
+        Specification<TaskEntity> spec = Specification.where(TaskSpecifications.orgId(orgId));
+
+        if (riskId != null) {
+            spec = spec.and(TaskSpecifications.riskId(riskId));
+        }
+        if (assigneeUserId != null) {
+            spec = spec.and(TaskSpecifications.assignee(assigneeUserId));
+        }
+        if (status != null) {
+            spec = spec.and(TaskSpecifications.status(status));
+        }
 
         return repo.findAll(spec).stream().map(this::toBoundary).toList();
     }
@@ -115,7 +122,7 @@ public class TaskServiceImpl implements TaskService {
     private TaskBoundary toBoundary(TaskEntity e) {
         TaskBoundary b = new TaskBoundary();
         b.setId(e.getId());
-        b.setOrganizationId(e.getOrganizationId());
+        b.setOrgId(e.getOrgId());
         b.setRiskId(e.getRiskId());
         b.setAssigneeUserId(e.getAssigneeUserId());
         b.setTitle(e.getTitle());

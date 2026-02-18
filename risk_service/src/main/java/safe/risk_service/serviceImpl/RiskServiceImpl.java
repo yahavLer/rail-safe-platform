@@ -36,7 +36,7 @@ public class RiskServiceImpl implements safe.risk_service.service.RiskService {
         // TODO (recommended): validate categoryCode exists for org via organization_service REST call.
 
         RiskEntity e = RiskEntity.builder()
-                .organizationId(input.getOrganizationId())
+                .orgId(input.getOrgId())
                 .divisionId(input.getDivisionId())
                 .departmentId(input.getDepartmentId())
                 .riskManagerUserId(input.getRiskManagerUserId())
@@ -209,7 +209,7 @@ public class RiskServiceImpl implements safe.risk_service.service.RiskService {
     private RiskBoundary toBoundary(RiskEntity e) {
         RiskBoundary b = new RiskBoundary();
         b.setId(e.getId());
-        b.setOrganizationId(e.getOrganizationId());
+        b.setOrgId(e.getOrgId());
         b.setDivisionId(e.getDivisionId());
         b.setDepartmentId(e.getDepartmentId());
         b.setRiskManagerUserId(e.getRiskManagerUserId());

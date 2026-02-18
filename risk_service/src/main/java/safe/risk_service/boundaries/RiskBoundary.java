@@ -14,7 +14,7 @@ import java.util.UUID;
 @Getter @Setter
 public class RiskBoundary {
     private UUID id;
-    private UUID organizationId;
+    private UUID orgId;
     private UUID divisionId;
     private UUID departmentId;
     private UUID riskManagerUserId;

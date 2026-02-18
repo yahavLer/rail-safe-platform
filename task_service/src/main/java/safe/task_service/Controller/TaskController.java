@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.hibernate.query.sqm.tree.SqmNode.log;
+
 /**
  * REST API for tasks (mitigations).
  */

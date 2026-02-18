@@ -26,7 +26,7 @@ public class RiskEntity {
     private UUID id;
 
     @Column(nullable = false)
-    private UUID organizationId;
+    private UUID orgId;
 
     // Optional sub-organization mapping
     private UUID divisionId;    // e.g., "חטיבה"

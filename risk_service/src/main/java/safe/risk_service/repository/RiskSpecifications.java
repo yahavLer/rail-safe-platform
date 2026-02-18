@@ -14,7 +14,7 @@ import java.util.UUID;
 public class RiskSpecifications {
 
     public static Specification<RiskEntity> orgId(UUID orgId) {
-        return (root, query, cb) -> cb.equal(root.get("organizationId"), orgId);
+        return (root, query, cb) -> cb.equal(root.get("orgId"), orgId);
     }
 
     public static Specification<RiskEntity> status(RiskStatus status) {

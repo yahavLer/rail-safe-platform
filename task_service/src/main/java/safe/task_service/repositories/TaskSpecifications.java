@@ -9,7 +9,7 @@ import java.util.UUID;
 public class TaskSpecifications {
 
     public static Specification<TaskEntity> orgId(UUID orgId) {
-        return (root, query, cb) -> cb.equal(root.get("organizationId"), orgId);
+        return (root, query, cb) -> cb.equal(root.get("orgId"), orgId);
     }
 
     public static Specification<TaskEntity> riskId(UUID riskId) {

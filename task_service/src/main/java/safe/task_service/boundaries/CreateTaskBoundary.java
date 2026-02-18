@@ -15,7 +15,7 @@ import java.util.UUID;
 public class CreateTaskBoundary {
 
     @NotNull
-    private UUID organizationId;
+    private UUID orgId;
 
     @NotNull
     private UUID riskId;

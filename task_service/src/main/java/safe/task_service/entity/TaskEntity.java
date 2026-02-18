@@ -26,7 +26,7 @@ public class TaskEntity {
      * Multi-tenant: to filter and secure tasks by organization.
      */
     @Column(nullable = false)
-    private UUID organizationId;
+    private UUID orgId;
 
     /**
      * Foreign reference (not DB FK) to risk_service risk id.

@@ -14,7 +14,7 @@ import java.util.UUID;
 public class TaskBoundary {
 
     private UUID id;
-    private UUID organizationId;
+    private UUID orgId;
     private UUID riskId;
 
     private UUID assigneeUserId;

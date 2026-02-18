@@ -13,7 +13,7 @@ import java.util.UUID;
 public class CreateRiskBoundary {
 
     @NotNull
-    private UUID organizationId;
+    private UUID orgId;
 
     private UUID divisionId;
     private UUID departmentId;
