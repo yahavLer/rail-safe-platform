@@ -33,6 +33,7 @@ public class RiskBoundary {
 
     private String location;
     private String notes;
+    private String sourceImageUrl;
 
     private Integer severityAfter;
     private Integer frequencyAfter;

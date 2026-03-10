@@ -32,6 +32,7 @@ public class UpdateRiskBoundary {
 
     private String location;
     private String notes;
+    private String sourceImageUrl;
 
     @Min(1) @Max(4)
     private Integer severityAfter;

@@ -79,7 +79,7 @@ public class RiskEntity {
     // Optional meta
     private String location;
     private String notes;
-
+    private String sourceImageUrl;
     // After mitigation (optional)
     private Integer severityAfter;
     private Integer frequencyAfter;

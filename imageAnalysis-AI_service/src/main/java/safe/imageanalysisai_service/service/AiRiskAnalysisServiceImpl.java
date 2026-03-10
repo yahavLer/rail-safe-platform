@@ -61,7 +61,7 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
             UUID divisionId,
             UUID departmentId,
             UUID riskManagerUserId,
-            String siteName,
+            String location,
             MultipartFile image
     ) {
         validateImage(image);
@@ -70,7 +70,7 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
             OrganizationClient.OrganizationAiContext orgContext = organizationClient.getAiContext(orgId);
 
             String imageBase64 = Base64.getEncoder().encodeToString(image.getBytes());
-            String prompt = buildPrompt(orgContext, siteName);
+            String prompt = buildPrompt(orgContext, location);
 
             Base44BridgeClient.Base44AnalysisResponse aiResult =
                     base44BridgeClient.analyzeRiskImage(
@@ -108,11 +108,11 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
             entity.setOrgContextJson(writeJson(orgContext));
             entity.setRawAiResponseJson(aiResult.rawJson());
             entity.setSourceImageUrl(aiResult.fileUrl());
-            entity.setSiteName(siteName);
+            entity.setlocation(location);
 
             if (Boolean.TRUE.equals(aiResult.hazardDetected())) {
                 entity.setStatus(AnalysisStatus.DRAFT_READY);
-                entity.setSuggestedTitle(defaultTitle(aiResult.title(), resolvedCategoryCode, siteName));
+                entity.setSuggestedTitle(defaultTitle(aiResult.title(), resolvedCategoryCode, location));
                 entity.setSuggestedDescription(aiResult.description());
                 entity.setSuggestedCategoryCode(resolvedCategoryCode);
                 entity.setSuggestedSeverityLevel(severity);
@@ -150,7 +150,7 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
         if (input.title() != null) entity.setSuggestedTitle(input.title());
         if (input.description() != null) entity.setSuggestedDescription(input.description());
         if (input.categoryCode() != null) entity.setSuggestedCategoryCode(input.categoryCode());
-        if (input.siteName() != null) entity.setSiteName(input.siteName());
+        if (input.location() != null) entity.setlocation(input.location());
 
         if (input.severityLevel() != null) {
             entity.setSuggestedSeverityLevel(scoringPolicy.clampLevel(input.severityLevel()));
@@ -186,14 +186,21 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
         if (input.title() != null) entity.setSuggestedTitle(input.title());
         if (input.description() != null) entity.setSuggestedDescription(input.description());
         if (input.categoryCode() != null) entity.setSuggestedCategoryCode(input.categoryCode());
-        if (input.siteName() != null) entity.setSiteName(input.siteName());
+        if (input.location() != null) entity.setlocation(input.location());
         if (input.divisionId() != null) entity.setDivisionId(input.divisionId());
         if (input.departmentId() != null) entity.setDepartmentId(input.departmentId());
         if (input.riskManagerUserId() != null) entity.setRiskManagerUserId(input.riskManagerUserId());
-        if (input.severityLevel() != null) entity.setSuggestedSeverityLevel(scoringPolicy.clampLevel(input.severityLevel()));
-        if (input.frequencyLevel() != null) entity.setSuggestedFrequencyLevel(scoringPolicy.clampLevel(input.frequencyLevel()));
-        if (input.suggestedMitigations() != null) entity.setSuggestedMitigations(normalizeMitigations(input.suggestedMitigations()));
+        if (input.severityLevel() != null) {
+        entity.setSuggestedSeverityLevel(scoringPolicy.clampLevel(input.severityLevel()));
+        }
 
+        if (input.frequencyLevel() != null) {
+            entity.setSuggestedFrequencyLevel(scoringPolicy.clampLevel(input.frequencyLevel()));
+        }
+
+        if (input.suggestedMitigations() != null) {
+            entity.setSuggestedMitigations(normalizeMitigations(input.suggestedMitigations()));
+        }
         int severity = entity.getSuggestedSeverityLevel() == null ? 1 : entity.getSuggestedSeverityLevel();
         int frequency = entity.getSuggestedFrequencyLevel() == null ? 1 : entity.getSuggestedFrequencyLevel();
         int score = scoringPolicy.calculateScore(severity, frequency);
@@ -201,6 +208,7 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
 
         entity.setSuggestedScore(score);
         entity.setSuggestedClassification(classification);
+        repository.save(entity);
 
         RiskServiceClient.CreatedRiskRemoteBoundary createdRisk =
                 riskServiceClient.createRisk(
@@ -214,7 +222,7 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
                                 entity.getSuggestedDescription(),
                                 entity.getSuggestedSeverityLevel(),
                                 entity.getSuggestedFrequencyLevel(),
-                                entity.getSiteName(),
+                                entity.getlocation(),
                                 entity.getSourceImageUrl()
                         )
                 );
@@ -252,7 +260,7 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
 
     private String buildPrompt(
             OrganizationClient.OrganizationAiContext context,
-            String siteName
+            String location
     ) {
         StringBuilder sb = new StringBuilder();
 
@@ -269,8 +277,8 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
                 6. תן ניסוח קצר, מקצועי וישים.
                 """);
 
-        if (siteName != null && !siteName.isBlank()) {
-            sb.append("\nאתר/מיקום משויך: ").append(siteName).append("\n");
+        if (location != null && !location.isBlank()) {
+            sb.append("\nאתר/מיקום משויך: ").append(location).append("\n");
         }
 
         sb.append("\nקטגוריות סיכון בארגון:\n");
@@ -344,15 +352,15 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
         return null;
     }
 
-    private String defaultTitle(String aiTitle, String categoryCode, String siteName) {
+    private String defaultTitle(String aiTitle, String categoryCode, String location) {
         if (aiTitle != null && !aiTitle.isBlank()) {
             return aiTitle;
         }
         String base = (categoryCode != null && !categoryCode.isBlank())
                 ? "סיכון חדש בקטגוריה " + categoryCode
                 : "סיכון חדש מזוהה מתמונה";
-        if (siteName != null && !siteName.isBlank()) {
-            return base + " - " + siteName;
+        if (location != null && !location.isBlank()) {
+            return base + " - " + location;
         }
         return base;
     }
@@ -398,7 +406,7 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
                         entity.getSuggestedFrequencyLevel(),
                         entity.getSuggestedScore(),
                         entity.getSuggestedClassification(),
-                        entity.getSiteName(),
+                        entity.getlocation(),
                         entity.getSuggestedMitigations()
                 ),
                 entity.getSourceImageUrl(),

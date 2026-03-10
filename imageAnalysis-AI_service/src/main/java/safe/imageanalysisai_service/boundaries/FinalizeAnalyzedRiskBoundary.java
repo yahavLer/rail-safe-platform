@@ -15,7 +15,7 @@ public record FinalizeAnalyzedRiskBoundary(
         UUID divisionId,
         UUID departmentId,
         UUID riskManagerUserId,
-        String siteName,
+        String location,
         List<String> suggestedMitigations
 ) {
 }

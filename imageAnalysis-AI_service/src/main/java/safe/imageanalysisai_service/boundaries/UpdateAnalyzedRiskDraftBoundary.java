@@ -12,7 +12,7 @@ public record UpdateAnalyzedRiskDraftBoundary(
         String categoryCode,
         @Min(1) @Max(4) Integer severityLevel,
         @Min(1) @Max(4) Integer frequencyLevel,
-        String siteName,
+        String location,
         List<String> suggestedMitigations
 ) {
 }

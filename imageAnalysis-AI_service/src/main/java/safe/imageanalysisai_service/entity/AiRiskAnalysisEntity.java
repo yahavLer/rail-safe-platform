@@ -57,7 +57,7 @@ public class AiRiskAnalysisEntity {
     private Integer suggestedFrequencyLevel;
     private Integer suggestedScore;
     private String suggestedClassification;
-    private String siteName;
+    private String location;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
@@ -157,8 +157,8 @@ public class AiRiskAnalysisEntity {
     public String getSuggestedClassification() { return suggestedClassification; }
     public void setSuggestedClassification(String suggestedClassification) { this.suggestedClassification = suggestedClassification; }
 
-    public String getSiteName() { return siteName; }
-    public void setSiteName(String siteName) { this.siteName = siteName; }
+    public String getlocation() { return location; }
+    public void setlocation(String location) { this.location = location; }
 
     public List<String> getSuggestedMitigations() { return suggestedMitigations; }
     public void setSuggestedMitigations(List<String> suggestedMitigations) {

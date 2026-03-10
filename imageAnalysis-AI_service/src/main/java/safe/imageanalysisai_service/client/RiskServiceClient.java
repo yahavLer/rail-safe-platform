@@ -33,7 +33,7 @@ public class RiskServiceClient {
             String description,
             Integer severityLevel,
             Integer frequencyLevel,
-            String siteName,
+            String location,
             String sourceImageUrl
     ) {
     }

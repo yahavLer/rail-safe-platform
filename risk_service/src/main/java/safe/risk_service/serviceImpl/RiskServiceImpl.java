@@ -46,6 +46,7 @@ public class RiskServiceImpl implements safe.risk_service.service.RiskService {
                 .severityLevel(input.getSeverityLevel())
                 .frequencyLevel(input.getFrequencyLevel())
                 .location(input.getLocation())
+                .sourceImageUrl(input.getSourceImageUrl())
                 .notes(input.getNotes())
                 .status(RiskStatus.DRAFT) // default
                 .severityAfter(input.getSeverityAfter())
@@ -136,6 +137,7 @@ public class RiskServiceImpl implements safe.risk_service.service.RiskService {
         if (input.getSeverityLevel() != null) e.setSeverityLevel(input.getSeverityLevel());
         if (input.getFrequencyLevel() != null) e.setFrequencyLevel(input.getFrequencyLevel());
         if (input.getLocation() != null) e.setLocation(input.getLocation());
+        if (input.getSourceImageUrl() != null) e.setSourceImageUrl(input.getSourceImageUrl());
         if (input.getNotes() != null) e.setNotes(input.getNotes());
         if (input.getSeverityAfter() != null) e.setSeverityAfter(input.getSeverityAfter());
         if (input.getFrequencyAfter() != null) e.setFrequencyAfter(input.getFrequencyAfter());
@@ -227,6 +229,7 @@ public class RiskServiceImpl implements safe.risk_service.service.RiskService {
 
         b.setLocation(e.getLocation());
         b.setNotes(e.getNotes());
+        b.setSourceImageUrl(e.getSourceImageUrl());
 
         b.setSeverityAfter(e.getSeverityAfter());
         b.setFrequencyAfter(e.getFrequencyAfter());

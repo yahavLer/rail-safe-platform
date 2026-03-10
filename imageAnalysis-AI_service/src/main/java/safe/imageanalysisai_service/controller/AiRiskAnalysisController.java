@@ -30,10 +30,10 @@ public class AiRiskAnalysisController {
             @RequestParam(required = false) UUID divisionId,
             @RequestParam(required = false) UUID departmentId,
             @RequestParam(required = false) UUID riskManagerUserId,
-            @RequestParam(required = false) String siteName,
+            @RequestParam(required = false) String location,
             @RequestPart("image") MultipartFile image
     ) {
-        return service.analyzeDraft(orgId, divisionId, departmentId, riskManagerUserId, siteName, image);
+        return service.analyzeDraft(orgId, divisionId, departmentId, riskManagerUserId, location, image);
     }
 
     @GetMapping("/{analysisId}")

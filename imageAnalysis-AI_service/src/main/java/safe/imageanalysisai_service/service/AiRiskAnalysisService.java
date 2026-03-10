@@ -14,7 +14,7 @@ public interface AiRiskAnalysisService {
             UUID divisionId,
             UUID departmentId,
             UUID riskManagerUserId,
-            String siteName,
+            String location,
             MultipartFile image
     );
 

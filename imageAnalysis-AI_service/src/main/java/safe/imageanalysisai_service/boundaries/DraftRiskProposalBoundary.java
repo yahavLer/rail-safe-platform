@@ -10,7 +10,7 @@ public record DraftRiskProposalBoundary(
         Integer frequencyLevel,
         Integer score,
         String classification,
-        String siteName,
+        String location,
         List<String> suggestedMitigations
 ) {
 }

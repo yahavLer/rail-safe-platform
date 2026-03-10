@@ -39,7 +39,7 @@ public class CreateRiskBoundary {
 
     private String location;
     private String notes;
-
+    private String sourceImageUrl;
     // Optional after mitigation estimate
     @Min(1) @Max(4)
     private Integer severityAfter;
