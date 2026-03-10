@@ -124,7 +124,7 @@ services:
     networks:
       - backend
 
-  # ====== IMAGE / AI SERVICE (בשלב מאוחר יותר) ======
+  # ====== IMAGE / AI SERVICE======
   image_ai_service:
     build:
       context: .
@@ -136,6 +136,7 @@ services:
       - organization_service
       - risk_service
       - task_service
+      - base44_bridge
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/railsafe
       - SPRING_DATASOURCE_USERNAME=postgres
@@ -146,14 +147,30 @@ services:
       - SPRING_RABBITMQ_USERNAME=guest
       - SPRING_RABBITMQ_PASSWORD=guest
 
-      - ORGANIZATION_SERVICE_BASE_URL=http://organization_service:8083
-      - RISK_SERVICE_BASE_URL=http://risk_service:8082
-      - TASK_SERVICE_BASE_URL=http://task_service:8084
+      - ORGANIZATION_SERVICE_BASE_URL=http://railsafe-organization-service:8083
+      - RISK_SERVICE_BASE_URL=http://railsafe-risk-service:8082
+      - TASK_SERVICE_BASE_URL=http://railsafe-task-service:8084
 
-      - BASE44_BRIDGE_BASE_URL=http://host.docker.internal:3001
-      - BASE44_BRIDGE_API_KEY=
+      - BASE44_BRIDGE_BASE_URL=http://railsafe-base44-bridge:3001
     ports:
       - "8090:8090"
+    networks:
+      - backend
+
+  # ====== base44_bridge ======
+  base44_bridge:
+    build:
+      context: ./base44_bridge
+      dockerfile: Dockerfile
+    container_name: railsafe-base44-bridge
+    environment:
+      - PORT=3001
+      - BASE44_APP_ID=${BASE44_APP_ID}
+      - BASE44_SERVER_URL=${BASE44_SERVER_URL}
+      - BASE44_TOKEN=${BASE44_TOKEN}
+      - BASE44_FUNCTIONS_VERSION=${BASE44_FUNCTIONS_VERSION}
+    ports:
+      - "3001:3001"
     networks:
       - backend
 

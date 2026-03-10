@@ -17,7 +17,8 @@ import safe.imageanalysisai_service.entity.AiRiskAnalysisEntity;
 import safe.imageanalysisai_service.enums.AnalysisStatus;
 import safe.imageanalysisai_service.repository.AiRiskAnalysisRepository;
 import safe.imageanalysisai_service.util.RiskScoringPolicy;
-
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
@@ -100,8 +101,8 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
             entity.setOriginalFilename(image.getOriginalFilename());
             entity.setContentType(image.getContentType());
             entity.setFileSize(image.getSize());
-            entity.setAiProvider("BASE44");
-            entity.setPromptVersion("base44-v1");
+            entity.setAiProvider("BASE44_FUNCTION");
+            entity.setPromptVersion("v1");
             entity.setHazardDetected(aiResult.hazardDetected());
             entity.setConfidence(aiResult.confidence());
             entity.setOrgContextJson(writeJson(orgContext));
@@ -123,7 +124,7 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
                 entity.setStatus(AnalysisStatus.NO_HAZARD_DETECTED);
                 entity.setSuggestedTitle("לא זוהה מפגע מובהק בתמונה");
                 entity.setSuggestedDescription(aiResult.description());
-                entity.setSuggestedMitigations(List.of());
+                entity.setSuggestedMitigations(new ArrayList<>());
             }
 
             repository.save(entity);
@@ -157,7 +158,6 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
         if (input.frequencyLevel() != null) {
             entity.setSuggestedFrequencyLevel(scoringPolicy.clampLevel(input.frequencyLevel()));
         }
-
         if (input.suggestedMitigations() != null) {
             entity.setSuggestedMitigations(normalizeMitigations(input.suggestedMitigations()));
         }
@@ -183,7 +183,6 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
             throw new IllegalStateException("Cannot finalize analysis with no detected hazard");
         }
 
-        // merge manual edits from frontend
         if (input.title() != null) entity.setSuggestedTitle(input.title());
         if (input.description() != null) entity.setSuggestedDescription(input.description());
         if (input.categoryCode() != null) entity.setSuggestedCategoryCode(input.categoryCode());
@@ -191,16 +190,9 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
         if (input.divisionId() != null) entity.setDivisionId(input.divisionId());
         if (input.departmentId() != null) entity.setDepartmentId(input.departmentId());
         if (input.riskManagerUserId() != null) entity.setRiskManagerUserId(input.riskManagerUserId());
-
-        if (input.severityLevel() != null) {
-            entity.setSuggestedSeverityLevel(scoringPolicy.clampLevel(input.severityLevel()));
-        }
-        if (input.frequencyLevel() != null) {
-            entity.setSuggestedFrequencyLevel(scoringPolicy.clampLevel(input.frequencyLevel()));
-        }
-        if (input.suggestedMitigations() != null) {
-            entity.setSuggestedMitigations(normalizeMitigations(input.suggestedMitigations()));
-        }
+        if (input.severityLevel() != null) entity.setSuggestedSeverityLevel(scoringPolicy.clampLevel(input.severityLevel()));
+        if (input.frequencyLevel() != null) entity.setSuggestedFrequencyLevel(scoringPolicy.clampLevel(input.frequencyLevel()));
+        if (input.suggestedMitigations() != null) entity.setSuggestedMitigations(normalizeMitigations(input.suggestedMitigations()));
 
         int severity = entity.getSuggestedSeverityLevel() == null ? 1 : entity.getSuggestedSeverityLevel();
         int frequency = entity.getSuggestedFrequencyLevel() == null ? 1 : entity.getSuggestedFrequencyLevel();
@@ -366,12 +358,13 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
     }
 
     private List<String> normalizeMitigations(List<String> mitigations) {
-        if (mitigations == null) return List.of();
+        if (mitigations == null) return new ArrayList<>();
+
         return mitigations.stream()
                 .filter(s -> s != null && !s.isBlank())
                 .map(String::trim)
                 .distinct()
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     private String buildTaskTitle(String mitigation) {

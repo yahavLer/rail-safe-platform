@@ -46,17 +46,16 @@ server:
 
 clients:
   organization-service:
-    base-url: ${ORGANIZATION_SERVICE_BASE_URL:http://organization_service:8083}
+    base-url: ${ORGANIZATION_SERVICE_BASE_URL:http://railsafe-organization-service:8083}
 
   risk-service:
-    base-url: ${RISK_SERVICE_BASE_URL:http://risk_service:8082}
+    base-url: ${RISK_SERVICE_BASE_URL:http://railsafe-risk-service:8082}
 
   task-service:
-    base-url: ${TASK_SERVICE_BASE_URL:http://task_service:8084}
+    base-url: ${TASK_SERVICE_BASE_URL:http://railsafe-task-service:8084}
 
   base44-bridge:
-    base-url: ${BASE44_BRIDGE_BASE_URL}
-    api-key: ${BASE44_BRIDGE_API_KEY:}
+    base-url: ${BASE44_BRIDGE_BASE_URL:http://railsafe-base44-bridge:3001}
 
 logging:
   level:

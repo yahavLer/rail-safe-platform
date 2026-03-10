@@ -21,7 +21,6 @@ public class AiRiskAnalysisEntity {
     private UUID divisionId;
     private UUID departmentId;
     private UUID riskManagerUserId;
-
     private UUID finalizedRiskId;
 
     @Enumerated(EnumType.STRING)
@@ -31,7 +30,6 @@ public class AiRiskAnalysisEntity {
     private String originalFilename;
     private String contentType;
     private Long fileSize;
-
     private String sourceImageUrl;
 
     private String aiProvider;
@@ -163,8 +161,11 @@ public class AiRiskAnalysisEntity {
     public void setSiteName(String siteName) { this.siteName = siteName; }
 
     public List<String> getSuggestedMitigations() { return suggestedMitigations; }
-    public void setSuggestedMitigations(List<String> suggestedMitigations) { this.suggestedMitigations = suggestedMitigations; }
-
+    public void setSuggestedMitigations(List<String> suggestedMitigations) {
+        this.suggestedMitigations = suggestedMitigations == null
+                ? new ArrayList<>()
+                : new ArrayList<>(suggestedMitigations);
+    }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }
