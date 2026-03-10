@@ -93,6 +93,12 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
                     orgContext.categories()
             );
 
+            String resolvedCategoryName = resolveCategoryName(
+                    resolvedCategoryCode,
+                    aiResult.categoryName(),
+                    orgContext.categories()
+            );
+
             AiRiskAnalysisEntity entity = new AiRiskAnalysisEntity();
             entity.setOrgId(orgId);
             entity.setDivisionId(divisionId);
@@ -115,6 +121,7 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
                 entity.setSuggestedTitle(defaultTitle(aiResult.title(), resolvedCategoryCode, location));
                 entity.setSuggestedDescription(aiResult.description());
                 entity.setSuggestedCategoryCode(resolvedCategoryCode);
+                entity.setSuggestedCategoryName(resolvedCategoryName);
                 entity.setSuggestedSeverityLevel(severity);
                 entity.setSuggestedFrequencyLevel(frequency);
                 entity.setSuggestedScore(score);
@@ -352,6 +359,26 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
         return null;
     }
 
+    private String resolveCategoryName(
+            String categoryCode,
+            String categoryName,
+            List<OrganizationClient.CategoryRemoteBoundary> categories
+    ) {
+        if (categoryCode != null) {
+            for (OrganizationClient.CategoryRemoteBoundary c : categories) {
+                if (c.code() != null && c.code().equalsIgnoreCase(categoryCode)) {
+                    return c.name();
+                }
+            }
+        }
+
+        if (categoryName != null && !categoryName.isBlank()) {
+            return categoryName;
+        }
+
+        return null;
+    }
+
     private String defaultTitle(String aiTitle, String categoryCode, String location) {
         if (aiTitle != null && !aiTitle.isBlank()) {
             return aiTitle;
@@ -402,6 +429,7 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
                         entity.getSuggestedTitle(),
                         entity.getSuggestedDescription(),
                         entity.getSuggestedCategoryCode(),
+                        entity.getSuggestedCategoryName(),
                         entity.getSuggestedSeverityLevel(),
                         entity.getSuggestedFrequencyLevel(),
                         entity.getSuggestedScore(),

@@ -6,6 +6,7 @@ public record DraftRiskProposalBoundary(
         String title,
         String description,
         String categoryCode,
+        String categoryName,
         Integer severityLevel,
         Integer frequencyLevel,
         Integer score,

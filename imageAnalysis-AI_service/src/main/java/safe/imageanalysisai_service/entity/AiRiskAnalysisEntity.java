@@ -53,6 +53,7 @@ public class AiRiskAnalysisEntity {
     private String suggestedDescription;
 
     private String suggestedCategoryCode;
+    private String suggestedCategoryName;
     private Integer suggestedSeverityLevel;
     private Integer suggestedFrequencyLevel;
     private Integer suggestedScore;
@@ -144,6 +145,9 @@ public class AiRiskAnalysisEntity {
 
     public String getSuggestedCategoryCode() { return suggestedCategoryCode; }
     public void setSuggestedCategoryCode(String suggestedCategoryCode) { this.suggestedCategoryCode = suggestedCategoryCode; }
+
+    public String getSuggestedCategoryName() { return suggestedCategoryName;}
+    public void setSuggestedCategoryName(String suggestedCategoryName) { this.suggestedCategoryName = suggestedCategoryName;}
 
     public Integer getSuggestedSeverityLevel() { return suggestedSeverityLevel; }
     public void setSuggestedSeverityLevel(Integer suggestedSeverityLevel) { this.suggestedSeverityLevel = suggestedSeverityLevel; }
