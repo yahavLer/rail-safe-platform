@@ -34,6 +34,31 @@ spring:
     username: ${SPRING_RABBITMQ_USERNAME:guest}
     password: ${SPRING_RABBITMQ_PASSWORD:guest}
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
 server:
   port: 8090
   address: 0.0.0.0
+
+clients:
+  organization-service:
+    base-url: ${ORGANIZATION_SERVICE_BASE_URL:http://organization_service:8083}
+
+  risk-service:
+    base-url: ${RISK_SERVICE_BASE_URL:http://risk_service:8082}
+
+  task-service:
+    base-url: ${TASK_SERVICE_BASE_URL:http://task_service:8084}
+
+  base44-bridge:
+    base-url: ${BASE44_BRIDGE_BASE_URL}
+    api-key: ${BASE44_BRIDGE_API_KEY:}
+
+logging:
+  level:
+    root: info
+    org.hibernate.SQL: debug

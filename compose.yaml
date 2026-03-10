@@ -133,6 +133,9 @@ services:
     depends_on:
       - postgres
       - rabbitmq
+      - organization_service
+      - risk_service
+      - task_service
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/railsafe
       - SPRING_DATASOURCE_USERNAME=postgres
@@ -142,6 +145,13 @@ services:
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=guest
       - SPRING_RABBITMQ_PASSWORD=guest
+
+      - ORGANIZATION_SERVICE_BASE_URL=http://organization_service:8083
+      - RISK_SERVICE_BASE_URL=http://risk_service:8082
+      - TASK_SERVICE_BASE_URL=http://task_service:8084
+
+      - BASE44_BRIDGE_BASE_URL=http://host.docker.internal:3001
+      - BASE44_BRIDGE_API_KEY=
     ports:
       - "8090:8090"
     networks:

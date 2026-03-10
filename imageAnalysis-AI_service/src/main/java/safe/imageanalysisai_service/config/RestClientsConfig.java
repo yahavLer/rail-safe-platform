@@ -33,14 +33,10 @@ public class RestClientsConfig {
     }
 
     @Bean
-    public RestClient aiProviderRestClient(
+    public RestClient base44BridgeRestClient(
             RestClient.Builder builder,
-            @Value("${clients.ai-provider.base-url}") String baseUrl,
-            @Value("${clients.ai-provider.api-key:}") String apiKey
+            @Value("${clients.base44-bridge.base-url}") String baseUrl
     ) {
-        return builder
-                .baseUrl(baseUrl)
-                .defaultHeader("Authorization", "Bearer " + apiKey)
-                .build();
+        return builder.baseUrl(baseUrl).build();
     }
 }

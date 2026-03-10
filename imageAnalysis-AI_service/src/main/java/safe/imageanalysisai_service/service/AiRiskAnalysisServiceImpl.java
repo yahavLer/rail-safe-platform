@@ -9,7 +9,7 @@ import safe.imageanalysisai_service.boundaries.AiRiskAnalysisBoundary;
 import safe.imageanalysisai_service.boundaries.DraftRiskProposalBoundary;
 import safe.imageanalysisai_service.boundaries.FinalizeAnalyzedRiskBoundary;
 import safe.imageanalysisai_service.boundaries.UpdateAnalyzedRiskDraftBoundary;
-import safe.imageanalysisai_service.client.AiVisionClient;
+import safe.imageanalysisai_service.client.Base44BridgeClient;
 import safe.imageanalysisai_service.client.OrganizationClient;
 import safe.imageanalysisai_service.client.RiskServiceClient;
 import safe.imageanalysisai_service.client.TaskServiceClient;
@@ -30,7 +30,7 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
 
     private final AiRiskAnalysisRepository repository;
     private final OrganizationClient organizationClient;
-    private final AiVisionClient aiVisionClient;
+    private final Base44BridgeClient base44BridgeClient;
     private final RiskServiceClient riskServiceClient;
     private final TaskServiceClient taskServiceClient;
     private final RiskScoringPolicy scoringPolicy;
@@ -39,7 +39,7 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
     public AiRiskAnalysisServiceImpl(
             AiRiskAnalysisRepository repository,
             OrganizationClient organizationClient,
-            AiVisionClient aiVisionClient,
+            Base44BridgeClient base44BridgeClient,
             RiskServiceClient riskServiceClient,
             TaskServiceClient taskServiceClient,
             RiskScoringPolicy scoringPolicy,
@@ -47,7 +47,7 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
     ) {
         this.repository = repository;
         this.organizationClient = organizationClient;
-        this.aiVisionClient = aiVisionClient;
+        this.base44BridgeClient = base44BridgeClient;
         this.riskServiceClient = riskServiceClient;
         this.taskServiceClient = taskServiceClient;
         this.scoringPolicy = scoringPolicy;
@@ -71,7 +71,15 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
             String imageBase64 = Base64.getEncoder().encodeToString(image.getBytes());
             String prompt = buildPrompt(orgContext, siteName);
 
-            AiVisionClient.AiVisionResult aiResult = aiVisionClient.analyze(imageBase64, prompt);
+            Base44BridgeClient.Base44AnalysisResponse aiResult =
+                    base44BridgeClient.analyzeRiskImage(
+                            new Base44BridgeClient.Base44AnalyzeRequest(
+                                    prompt,
+                                    imageBase64,
+                                    image.getOriginalFilename(),
+                                    image.getContentType()
+                            )
+                    );
 
             Integer severity = scoringPolicy.clampLevel(aiResult.severityLevel());
             Integer frequency = scoringPolicy.clampLevel(aiResult.frequencyLevel());
@@ -92,15 +100,16 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
             entity.setOriginalFilename(image.getOriginalFilename());
             entity.setContentType(image.getContentType());
             entity.setFileSize(image.getSize());
-            entity.setAiProvider("GENERIC_VISION_PROVIDER");
-            entity.setPromptVersion("v1");
+            entity.setAiProvider("BASE44");
+            entity.setPromptVersion("base44-v1");
             entity.setHazardDetected(aiResult.hazardDetected());
             entity.setConfidence(aiResult.confidence());
             entity.setOrgContextJson(writeJson(orgContext));
             entity.setRawAiResponseJson(aiResult.rawJson());
+            entity.setSourceImageUrl(aiResult.fileUrl());
             entity.setSiteName(siteName);
 
-            if (aiResult.hazardDetected()) {
+            if (Boolean.TRUE.equals(aiResult.hazardDetected())) {
                 entity.setStatus(AnalysisStatus.DRAFT_READY);
                 entity.setSuggestedTitle(defaultTitle(aiResult.title(), resolvedCategoryCode, siteName));
                 entity.setSuggestedDescription(aiResult.description());
