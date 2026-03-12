@@ -55,7 +55,7 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
       RISK_SERVICE_BASE_URL: http://risk_service:8082
-    expose:
+    ports:
       - "8081"
     networks:
       - backend
@@ -81,7 +81,7 @@ services:
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
       USER_SERVICE_BASE_URL: http://user_service:8081
-    expose:
+    ports:
       - "8082"
     networks:
       - backend
@@ -106,7 +106,7 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
-    expose:
+    ports:
       - "8083"
     networks:
       - backend
@@ -131,7 +131,7 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
-    expose:
+    ports:
       - "8084"
     networks:
       - backend
@@ -186,7 +186,7 @@ services:
       RISK_SERVICE_BASE_URL: http://risk_service:8082
       TASK_SERVICE_BASE_URL: http://task_service:8084
       BASE44_BRIDGE_BASE_URL: http://base44_bridge:3001
-    expose:
+    ports:
       - "8090"
     networks:
       - backend
