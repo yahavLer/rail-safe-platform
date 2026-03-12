@@ -5,6 +5,7 @@ WORKDIR /workspace
 
 # מעתיקים את כל הפרויקט (root), כולל settings.gradle, build.gradle וכל המודולים
 COPY . .
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 
 RUN ./gradlew :organization_service:bootJar --no-daemon
 
