@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import * as Base44Sdk from "@base44/sdk";
+import { File } from "node:buffer";
 
 const createClient =
   Base44Sdk.createClient ?? Base44Sdk.default?.createClient;
@@ -25,7 +26,11 @@ const {
 } = process.env;
 
 if (!BASE44_APP_ID || !BASE44_SERVER_URL || !BASE44_TOKEN) {
-  console.error("Missing Base44 environment variables");
+  console.error("Missing Base44 environment variables", {
+    hasAppId: Boolean(BASE44_APP_ID),
+    hasServerUrl: Boolean(BASE44_SERVER_URL),
+    hasToken: Boolean(BASE44_TOKEN),
+  });
   process.exit(1);
 }
 
@@ -42,13 +47,25 @@ function base64ToFile(
   fileName = "risk-image.jpg",
   contentType = "image/jpeg"
 ) {
+  if (!imageBase64 || typeof imageBase64 !== "string") {
+    throw new Error("imageBase64 is missing or invalid");
+  }
+
   const cleaned = imageBase64.includes(",")
     ? imageBase64.split(",")[1]
     : imageBase64;
 
+  if (!cleaned) {
+    throw new Error("Could not extract base64 payload from imageBase64");
+  }
+
   const buffer = Buffer.from(cleaned, "base64");
-  const blob = new Blob([buffer], { type: contentType });
-  return new File([blob], fileName, { type: contentType });
+
+  if (!buffer.length) {
+    throw new Error("Decoded image buffer is empty");
+  }
+
+  return new File([buffer], fileName, { type: contentType });
 }
 
 app.get("/health", (_req, res) => {
@@ -71,12 +88,21 @@ app.post("/api/analyze-risk-image", async (req, res) => {
       contentType || "image/jpeg"
     );
 
+    console.log("Starting Base44 upload", {
+      fileName: file.name,
+      contentType: file.type,
+      size: file.size,
+    });
+
     const uploadResult = await base44.integrations.Core.UploadFile({ file });
     const fileUrl = uploadResult?.file_url;
+
+    console.log("Base44 upload result", { fileUrl });
 
     if (!fileUrl) {
       return res.status(500).json({
         message: "Failed to upload file to Base44",
+        uploadResult: uploadResult ?? null,
       });
     }
 
@@ -104,10 +130,12 @@ app.post("/api/analyze-risk-image", async (req, res) => {
           "title",
           "description",
           "confidence",
-          "suggestedMitigations"
+          "suggestedMitigations",
         ],
       },
     });
+
+    console.log("Base44 AI result received");
 
     return res.json({
       hazardDetected: Boolean(aiResult?.hazardDetected),
@@ -125,14 +153,22 @@ app.post("/api/analyze-risk-image", async (req, res) => {
       rawJson: JSON.stringify(aiResult ?? {}),
     });
   } catch (error) {
-    console.error("Base44 bridge error:", error);
+    console.error("Base44 bridge error details:", {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+      cause: error?.cause,
+      response: error?.response?.data ?? null,
+    });
+
     return res.status(500).json({
       message: "Failed to analyze image with Base44",
       error: error?.message || "Unknown error",
+      details: error?.response?.data ?? null,
     });
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Base44 bridge listening on port ${PORT}`);
 });
