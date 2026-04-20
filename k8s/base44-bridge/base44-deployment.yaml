@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: base44-bridge
+  namespace: safebox-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: base44-bridge
+  template:
+    metadata:
+      labels:
+        app: base44-bridge
+    spec:
+      containers:
+        - name: base44-bridge
+          image: railsafe-base44-bridge:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: base44-bridge-config
+            - secretRef:
+                name: base44-bridge-secret
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 10

@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+private static final Logger log = LoggerFactory.getLogger(RiskServiceImpl.class);
 
 /**
  * Main business logic:
@@ -34,35 +37,94 @@ public class RiskServiceImpl implements safe.risk_service.service.RiskService {
     @Override
     public RiskBoundary create(CreateRiskBoundary input) {
         // TODO (recommended): validate categoryCode exists for org via organization_service REST call.
-
-        RiskEntity e = RiskEntity.builder()
-                .orgId(input.getOrgId())
-                .divisionId(input.getDivisionId())
-                .departmentId(input.getDepartmentId())
-                .riskManagerUserId(input.getRiskManagerUserId())
-                .title(input.getTitle())
-                .categoryCode(input.getCategoryCode())
-                .description(input.getDescription())
-                .severityLevel(input.getSeverityLevel())
-                .frequencyLevel(input.getFrequencyLevel())
-                .location(input.getLocation())
-                .sourceImageUrl(input.getSourceImageUrl())
-                .notes(input.getNotes())
-                .status(RiskStatus.DRAFT) // default
-                .severityAfter(input.getSeverityAfter())
-                .frequencyAfter(input.getFrequencyAfter())
-                .build();
-
+    log.info(
+            "START createRisk: received request. orgId={}, divisionId={}, departmentId={}, riskManagerUserId={}, title={}, categoryCode={}. goal=create risk, calculate score and classification, then save to DB",
+            input.getOrgId(),
+            input.getDivisionId(),
+            input.getDepartmentId(),
+            input.getRiskManagerUserId(),
+            input.getTitle(),
+            input.getCategoryCode()
+    );
+    try {
+         if (input.getOrgId() == null) {
+            log.warn("VALIDATION FAILED createRisk: orgId is null");
+            throw new IllegalArgumentException("orgId is required");
+        }
+        RiskEntity e = toEntity(input);
+        log.debug(
+            "MAPPING SUCCESSFUL createRisk: mapped input to entity. orgId={}, divisionId={}, departmentId={}, riskManagerUserId={}, title={}, categoryCode={}",
+            e.getOrgId(),
+            e.getDivisionId(),
+            e.getDepartmentId(),
+            e.getRiskManagerUserId(),
+            e.getTitle(),
+            e.getCategoryCode()
+        );
         applyComputedFields(e);
-
-        return toBoundary(repo.save(e));
+        log.debug(
+                "COMPUTE SUCCESS createRisk: computed fields applied. riskScore={}, classification={}, scoreAfter={}, classificationAfter={}",
+                e.getRiskScore(),
+                e.getClassification(),
+                e.getScoreAfter(),
+                e.getClassificationAfter()
+        );
+        RiskEntity saved = repo.save(e);
+        log.info(
+                "SUCCESS createRisk: risk saved successfully. riskId={}, orgId={}, categoryCode={}, status={}",
+                saved.getId(),
+                saved.getOrgId(),
+                saved.getCategoryCode(),
+                saved.getStatus()
+        );
+        return toBoundary(saved);
+    }
+    catch (IllegalArgumentException ex) {
+        log.warn(
+                "FAILED createRisk: business/validation error. orgId={}, title={}, categoryCode={}, reason={}",
+                input.getOrgId(),
+                input.getTitle(),
+                input.getCategoryCode(),
+                ex.getMessage()
+        );
+        throw ex;
+    } catch (Exception ex) {
+        log.error(
+                "FAILED createRisk: unexpected error while creating risk. orgId={}, title={}, categoryCode={}, errorType={}, errorMessage={}",
+                input.getOrgId(),
+                input.getTitle(),
+                input.getCategoryCode(),
+                ex.getClass().getSimpleName(),
+                ex.getMessage(),
+                ex
+        );
+        throw new RuntimeException("Failed to create risk: " + ex.getMessage(), ex);
     }
 
     @Override
     public RiskBoundary getById(UUID riskId) {
-        RiskEntity e = repo.findById(riskId)
-                .orElseThrow(() -> new IllegalArgumentException("Risk not found: " + riskId));
-        return toBoundary(e);
+        log.info("START getRiskById: received riskId={}. goal=fetch risk by id", riskId);
+
+        try {
+            RiskEntity e = repo.findById(riskId)
+                    .orElseThrow(() -> {
+                        log.warn("FAILED getRiskById: risk not found. riskId={}", riskId);
+                        return new IllegalArgumentException("Risk not found: " + riskId);
+                    });
+
+            log.info("SUCCESS getRiskById: risk found. riskId={}, orgId={}, status={}", e.getId(), e.getOrgId(), e.getStatus());
+            return toBoundary(e);
+
+        } catch (IllegalArgumentException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.error("FAILED getRiskById: unexpected error. riskId={}, errorType={}, errorMessage={}",
+                    riskId,
+                    ex.getClass().getSimpleName(),
+                    ex.getMessage(),
+                    ex);
+            throw ex;
+        }
     }
 
     @Override
@@ -130,18 +192,8 @@ public class RiskServiceImpl implements safe.risk_service.service.RiskService {
                 .orElseThrow(() -> new IllegalArgumentException("Risk not found: " + riskId));
 
         // Update only provided fields
-        if (input.getRiskManagerUserId() != null) e.setRiskManagerUserId(input.getRiskManagerUserId());
-        if (input.getTitle() != null) e.setTitle(input.getTitle());
-        if (input.getCategoryCode() != null) e.setCategoryCode(input.getCategoryCode());
-        if (input.getDescription() != null) e.setDescription(input.getDescription());
-        if (input.getSeverityLevel() != null) e.setSeverityLevel(input.getSeverityLevel());
-        if (input.getFrequencyLevel() != null) e.setFrequencyLevel(input.getFrequencyLevel());
-        if (input.getLocation() != null) e.setLocation(input.getLocation());
-        if (input.getSourceImageUrl() != null) e.setSourceImageUrl(input.getSourceImageUrl());
-        if (input.getNotes() != null) e.setNotes(input.getNotes());
-        if (input.getSeverityAfter() != null) e.setSeverityAfter(input.getSeverityAfter());
-        if (input.getFrequencyAfter() != null) e.setFrequencyAfter(input.getFrequencyAfter());
-
+        applyUpdates(e, input);
+    
         // Recompute
         applyComputedFields(e);
 
@@ -159,12 +211,29 @@ public class RiskServiceImpl implements safe.risk_service.service.RiskService {
 
     @Override
     public void delete(UUID riskId) {
-        if (!repo.existsById(riskId)) {
-            throw new IllegalArgumentException("Risk not found: " + riskId);
-        }
-        repo.deleteById(riskId);
-    }
+        log.info("START deleteRisk: received riskId={}. goal=delete risk from DB", riskId);
 
+        try {
+            if (!repo.existsById(riskId)) {
+                log.warn("FAILED deleteRisk: risk not found. riskId={}", riskId);
+                throw new IllegalArgumentException("Risk not found: " + riskId);
+            }
+
+            repo.deleteById(riskId);
+            log.info("SUCCESS deleteRisk: risk deleted successfully. riskId={}", riskId);
+
+        } catch (IllegalArgumentException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.error("FAILED deleteRisk: unexpected error. riskId={}, errorType={}, errorMessage={}",
+                    riskId,
+                    ex.getClass().getSimpleName(),
+                    ex.getMessage(),
+                    ex);
+            throw ex;
+        }
+    }
+    
     @Override
     public Map<RiskStatus, Long> countByStatus(UUID orgId) {
         if (orgId == null) throw new IllegalArgumentException("orgId is required");
@@ -239,5 +308,37 @@ public class RiskServiceImpl implements safe.risk_service.service.RiskService {
         b.setCreatedAt(e.getCreatedAt());
         b.setUpdatedAt(e.getUpdatedAt());
         return b;
+    }
+    private RiskEntity toEntity(CreateRiskBoundary input) {
+    return RiskEntity.builder()
+            .orgId(input.getOrgId())
+            .divisionId(input.getDivisionId())
+            .departmentId(input.getDepartmentId())
+            .riskManagerUserId(input.getRiskManagerUserId())
+            .title(input.getTitle())
+            .categoryCode(input.getCategoryCode())
+            .description(input.getDescription())
+            .severityLevel(input.getSeverityLevel())
+            .frequencyLevel(input.getFrequencyLevel())
+            .location(input.getLocation())
+            .sourceImageUrl(input.getSourceImageUrl())
+            .notes(input.getNotes())
+            .status(RiskStatus.DRAFT)
+            .severityAfter(input.getSeverityAfter())
+            .frequencyAfter(input.getFrequencyAfter())
+            .build();
+    }
+    private void applyUpdates(RiskEntity e, UpdateRiskBoundary input) {
+        if (input.getRiskManagerUserId() != null) e.setRiskManagerUserId(input.getRiskManagerUserId());
+        if (input.getTitle() != null) e.setTitle(input.getTitle());
+        if (input.getCategoryCode() != null) e.setCategoryCode(input.getCategoryCode());
+        if (input.getDescription() != null) e.setDescription(input.getDescription());
+        if (input.getSeverityLevel() != null) e.setSeverityLevel(input.getSeverityLevel());
+        if (input.getFrequencyLevel() != null) e.setFrequencyLevel(input.getFrequencyLevel());
+        if (input.getLocation() != null) e.setLocation(input.getLocation());
+        if (input.getSourceImageUrl() != null) e.setSourceImageUrl(input.getSourceImageUrl());
+        if (input.getNotes() != null) e.setNotes(input.getNotes());
+        if (input.getSeverityAfter() != null) e.setSeverityAfter(input.getSeverityAfter());
+        if (input.getFrequencyAfter() != null) e.setFrequencyAfter(input.getFrequencyAfter());
     }
 }
