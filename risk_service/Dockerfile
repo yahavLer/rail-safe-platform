@@ -1,5 +1,5 @@
 # ====== שלב build (בונה את jar של user_service מתוך המונו-רפו) ======
-FROM gradle:8.7-jdk17-alpine AS builder
+FROM gradle:jdk17 AS builder
 
 WORKDIR /workspace
 
@@ -10,8 +10,7 @@ RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 RUN ./gradlew :risk_service:bootJar --no-daemon
 
 # ====== שלב ריצה ======
-FROM eclipse-temurin:17-jre-alpine
-
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 
 # מעתיקים את ה-jar שנבנה בשלב הקודם

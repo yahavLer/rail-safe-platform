@@ -16,7 +16,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-private static final Logger log = LoggerFactory.getLogger(RiskServiceImpl.class);
 
 /**
  * Main business logic:
@@ -27,6 +26,7 @@ private static final Logger log = LoggerFactory.getLogger(RiskServiceImpl.class)
 @Service
 @Transactional
 public class RiskServiceImpl implements safe.risk_service.service.RiskService {
+    private static final Logger log = LoggerFactory.getLogger(RiskServiceImpl.class);
 
     private final RiskRepository repo;
 
@@ -37,68 +37,68 @@ public class RiskServiceImpl implements safe.risk_service.service.RiskService {
     @Override
     public RiskBoundary create(CreateRiskBoundary input) {
         // TODO (recommended): validate categoryCode exists for org via organization_service REST call.
-    log.info(
-            "START createRisk: received request. orgId={}, divisionId={}, departmentId={}, riskManagerUserId={}, title={}, categoryCode={}. goal=create risk, calculate score and classification, then save to DB",
-            input.getOrgId(),
-            input.getDivisionId(),
-            input.getDepartmentId(),
-            input.getRiskManagerUserId(),
-            input.getTitle(),
-            input.getCategoryCode()
-    );
-    try {
-         if (input.getOrgId() == null) {
-            log.warn("VALIDATION FAILED createRisk: orgId is null");
-            throw new IllegalArgumentException("orgId is required");
-        }
-        RiskEntity e = toEntity(input);
-        log.debug(
-            "MAPPING SUCCESSFUL createRisk: mapped input to entity. orgId={}, divisionId={}, departmentId={}, riskManagerUserId={}, title={}, categoryCode={}",
-            e.getOrgId(),
-            e.getDivisionId(),
-            e.getDepartmentId(),
-            e.getRiskManagerUserId(),
-            e.getTitle(),
-            e.getCategoryCode()
-        );
-        applyComputedFields(e);
-        log.debug(
-                "COMPUTE SUCCESS createRisk: computed fields applied. riskScore={}, classification={}, scoreAfter={}, classificationAfter={}",
-                e.getRiskScore(),
-                e.getClassification(),
-                e.getScoreAfter(),
-                e.getClassificationAfter()
-        );
-        RiskEntity saved = repo.save(e);
         log.info(
-                "SUCCESS createRisk: risk saved successfully. riskId={}, orgId={}, categoryCode={}, status={}",
-                saved.getId(),
-                saved.getOrgId(),
-                saved.getCategoryCode(),
-                saved.getStatus()
-        );
-        return toBoundary(saved);
-    }
-    catch (IllegalArgumentException ex) {
-        log.warn(
-                "FAILED createRisk: business/validation error. orgId={}, title={}, categoryCode={}, reason={}",
+                "START createRisk: received request. orgId={}, divisionId={}, departmentId={}, riskManagerUserId={}, title={}, categoryCode={}. goal=create risk, calculate score and classification, then save to DB",
                 input.getOrgId(),
+                input.getDivisionId(),
+                input.getDepartmentId(),
+                input.getRiskManagerUserId(),
                 input.getTitle(),
-                input.getCategoryCode(),
-                ex.getMessage()
+                input.getCategoryCode()
         );
-        throw ex;
-    } catch (Exception ex) {
-        log.error(
-                "FAILED createRisk: unexpected error while creating risk. orgId={}, title={}, categoryCode={}, errorType={}, errorMessage={}",
-                input.getOrgId(),
-                input.getTitle(),
-                input.getCategoryCode(),
-                ex.getClass().getSimpleName(),
-                ex.getMessage(),
-                ex
-        );
-        throw new RuntimeException("Failed to create risk: " + ex.getMessage(), ex);
+        try {
+            if (input.getOrgId() == null) {
+                log.warn("VALIDATION FAILED createRisk: orgId is null");
+                throw new IllegalArgumentException("orgId is required");
+            }
+            RiskEntity e = toEntity(input);
+            log.debug(
+                    "MAPPING SUCCESSFUL createRisk: mapped input to entity. orgId={}, divisionId={}, departmentId={}, riskManagerUserId={}, title={}, categoryCode={}",
+                    e.getOrgId(),
+                    e.getDivisionId(),
+                    e.getDepartmentId(),
+                    e.getRiskManagerUserId(),
+                    e.getTitle(),
+                    e.getCategoryCode()
+            );
+            applyComputedFields(e);
+            log.debug(
+                    "COMPUTE SUCCESS createRisk: computed fields applied. riskScore={}, classification={}, scoreAfter={}, classificationAfter={}",
+                    e.getRiskScore(),
+                    e.getClassification(),
+                    e.getScoreAfter(),
+                    e.getClassificationAfter()
+            );
+            RiskEntity saved = repo.save(e);
+            log.info(
+                    "SUCCESS createRisk: risk saved successfully. riskId={}, orgId={}, categoryCode={}, status={}",
+                    saved.getId(),
+                    saved.getOrgId(),
+                    saved.getCategoryCode(),
+                    saved.getStatus()
+            );
+            return toBoundary(saved);
+        } catch (IllegalArgumentException ex) {
+            log.warn(
+                    "FAILED createRisk: business/validation error. orgId={}, title={}, categoryCode={}, reason={}",
+                    input.getOrgId(),
+                    input.getTitle(),
+                    input.getCategoryCode(),
+                    ex.getMessage()
+            );
+            throw ex;
+        } catch (Exception ex) {
+            log.error(
+                    "FAILED createRisk: unexpected error while creating risk. orgId={}, title={}, categoryCode={}, errorType={}, errorMessage={}",
+                    input.getOrgId(),
+                    input.getTitle(),
+                    input.getCategoryCode(),
+                    ex.getClass().getSimpleName(),
+                    ex.getMessage(),
+                    ex
+            );
+            throw new RuntimeException("Failed to create risk: " + ex.getMessage(), ex);
+        }
     }
 
     @Override
