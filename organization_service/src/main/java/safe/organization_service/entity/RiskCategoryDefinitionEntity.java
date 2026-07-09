@@ -10,7 +10,7 @@ import java.util.UUID;
         uniqueConstraints = @UniqueConstraint(name = "uq_org_category_code", columnNames = {"org_id", "code"})
 )
 /**
- * Organization-specific risk categories. Code is typically GH1..GH21.
+ * Organization-specific risk categories. Code is generated per organization as an increasing number.
  */
 public class RiskCategoryDefinitionEntity {
 
@@ -22,7 +22,7 @@ public class RiskCategoryDefinitionEntity {
     @JoinColumn(name = "org_id", nullable = false)
     private OrganizationEntity organization;
 
-    /** Category code like "GH1".."GH21" */
+    /** Organization-scoped generated category code. */
     @Column(nullable = false, length = 10)
     private String code;
 

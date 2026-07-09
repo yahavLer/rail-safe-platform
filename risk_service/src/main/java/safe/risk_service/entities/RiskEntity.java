@@ -39,7 +39,7 @@ public class RiskEntity {
     private String title;
 
     /**
-     * Category code (GH1..GH21). Organization defines these names in organization_service.
+     * Organization category code. Organization service owns generated codes and display names.
      */
     @Column(nullable = false)
     private String categoryCode;

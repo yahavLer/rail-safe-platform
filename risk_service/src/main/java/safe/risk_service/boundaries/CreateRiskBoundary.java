@@ -24,8 +24,8 @@ public class CreateRiskBoundary {
     private String title;
 
     @NotBlank
-    @Pattern(regexp = "^[A-Za-z][A-Za-z0-9_-]{0,9}$",
-            message = "categoryCode must be 1-10 chars, start with a letter, and contain only letters/digits/_/-")
+    @Pattern(regexp = "^[A-Za-z0-9][A-Za-z0-9_-]{0,9}$",
+            message = "categoryCode must be 1-10 chars and contain only letters/digits/_/-")
     private String categoryCode;
 
     @NotBlank

@@ -19,7 +19,7 @@ public class UpdateRiskBoundary {
 
     private String title;
 
-    @Pattern(regexp = "^GH([1-9]|1\\d|2[0-1])$", message = "categoryCode must match GH1..GH21")
+    @Pattern(regexp = "^[A-Za-z0-9][A-Za-z0-9_-]{0,9}$", message = "categoryCode must be 1-10 chars and contain only letters/digits/_/-")
     private String categoryCode;
 
     private String description;

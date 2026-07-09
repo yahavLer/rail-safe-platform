@@ -141,29 +141,12 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * Validates that the user role matches the organizational scope provided.
-     * This prevents inconsistent states (e.g., department manager without department).
+     * Validates only structural scope consistency. Organizational units can be assigned later,
+     * so creating a risk manager role must not be blocked by missing division/department IDs.
      */
     private void validateRoleScope(UserRole role, UUID divisionId, UUID departmentId) {
-        switch (role) {
-            case CHIEF_RISK_MANAGER -> {
-                // No division/department required
-            }
-            case DIVISION_RISK_MANAGER -> {
-                if (divisionId == null) {
-                    throw new BadRequestException("DIVISION_RISK_MANAGER חייב divisionId");
-                }
-                // departmentId לא חובה. אם תרצי לאסור:
-                // if (departmentId != null) throw new BadRequestException("DIVISION manager cannot have departmentId");
-            }
-            case DEPARTMENT_RISK_MANAGER -> {
-                if (divisionId == null || departmentId == null) {
-                    throw new BadRequestException("DEPARTMENT_RISK_MANAGER חייב divisionId וגם departmentId");
-                }
-            }
-            case EMPLOYEE -> {
-                // Usually only org is required; division/department are optional
-            }
+        if (departmentId != null && divisionId == null) {
+            throw new BadRequestException("departmentId requires divisionId");
         }
     }
 }

@@ -1,6 +1,7 @@
 package safe.organization_service.serviceImpl;
 
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
 import safe.organization_service.boundary.*;
 import safe.organization_service.entity.*;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -121,22 +121,20 @@ public class OrganizationServiceImpl implements OrganizationService {
     public CategoryBoundary createCategory(UUID orgId, CreateCategoryBoundary input) {
         OrganizationEntity org = orgRepo.findById(orgId).orElseThrow(() -> new OrganizationNotFoundException(orgId));
         int nextOrder = categoryRepo.findMaxDisplayOrderByOrganizationId(orgId).orElse(0) + 1;
-        String normalizedCode = input.getCode().trim().toUpperCase(Locale.ROOT);
-
-        validateCategoryCode(normalizedCode);
-
-        if (categoryRepo.findByOrganization_IdAndCode(orgId, normalizedCode).isPresent()) {
-            throw new BadRequestException("Category code already exists: " + normalizedCode);
-        }
+        String generatedCode = generateNextCategoryCode(orgId);
 
         RiskCategoryDefinitionEntity c = new RiskCategoryDefinitionEntity();
         c.setOrganization(org);
-        c.setCode(normalizedCode);
-        c.setName(input.getName());
+        c.setCode(generatedCode);
+        c.setName(input.getName().trim());
         c.setDisplayOrder(nextOrder);
         c.setActive(true);
 
-        return toCategoryBoundary(categoryRepo.save(c));
+        try {
+            return toCategoryBoundary(categoryRepo.save(c));
+        } catch (DataIntegrityViolationException e) {
+            throw new BadRequestException("Category code already exists. Please retry category creation.");
+        }
     }
 
     @Override
@@ -224,11 +222,23 @@ public class OrganizationServiceImpl implements OrganizationService {
         }
     }
 
-    private void validateCategoryCode(String code) {
-        // 1..10 chars, starts with letter, allowed: A-Z 0-9 _ -
-        if (code == null || !code.matches("^[A-Za-z][A-Za-z0-9_-]{0,9}$")) {
-            throw new BadRequestException("Category code must be 1-10 chars, start with a letter, and contain only letters/digits/_/-");
-        }
+    private String generateNextCategoryCode(UUID orgId) {
+        int maxCode = categoryRepo.findByOrganization_IdOrderByDisplayOrderAsc(orgId).stream()
+                .map(RiskCategoryDefinitionEntity::getCode)
+                .mapToInt(this::extractCategoryCodeNumber)
+                .max()
+                .orElse(0);
+        return String.valueOf(maxCode + 1);
+    }
+
+    private int extractCategoryCodeNumber(String code) {
+        if (code == null) return 0;
+        String clean = code.trim();
+        if (clean.matches("\\d+")) return Integer.parseInt(clean);
+
+        String trailingDigits = clean.replaceFirst("^.*?(\\d+)$", "$1");
+        if (trailingDigits.matches("\\d+")) return Integer.parseInt(trailingDigits);
+        return 0;
     }
 
     private void assertOrgExists(UUID orgId) {

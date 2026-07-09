@@ -43,14 +43,14 @@ public class UserEntity {
 
     /**
      * Division scope (optional).
-     * Required for DIVISION_RISK_MANAGER and DEPARTMENT_RISK_MANAGER.
+     * Optional scope for division and department risk managers.
      */
     @Column(name = "division_id")
     private UUID divisionId;
 
     /**
      * Department scope (optional).
-     * Required for DEPARTMENT_RISK_MANAGER.
+     * Optional scope for department-level risk managers.
      */
     @Column(name = "department_id")
     private UUID departmentId;
