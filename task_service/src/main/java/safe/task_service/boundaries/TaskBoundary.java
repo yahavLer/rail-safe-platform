@@ -2,6 +2,7 @@ package safe.task_service.boundaries;
 
 import lombok.Getter;
 import lombok.Setter;
+import safe.task_service.enums.RecurrenceUnit;
 import safe.task_service.enums.TaskStatus;
 
 import java.time.Instant;
@@ -25,6 +26,10 @@ public class TaskBoundary {
     private TaskStatus status;
 
     private Instant dueDate;
+
+    private boolean recurring;
+    private Integer recurrenceInterval;
+    private RecurrenceUnit recurrenceUnit;
 
     private Instant createdAt;
     private Instant updatedAt;

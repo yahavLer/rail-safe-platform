@@ -66,8 +66,10 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
     ) {
         validateImage(image);
 
+        OrganizationClient.OrganizationAiContext orgContext = null;
+
         try {
-            OrganizationClient.OrganizationAiContext orgContext = organizationClient.getAiContext(orgId);
+            orgContext = organizationClient.getAiContext(orgId);
 
             String imageBase64 = Base64.getEncoder().encodeToString(image.getBytes());
             String prompt = buildPrompt(orgContext, location);
@@ -137,10 +139,66 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
             repository.save(entity);
             return toBoundary(entity);
 
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to read uploaded image", e);
+        } catch (Exception e) {
+            return buildManualFallbackDraft(
+                    orgId,
+                    divisionId,
+                    departmentId,
+                    riskManagerUserId,
+                    location,
+                    image,
+                    orgContext,
+                    e
+            );
         }
     }
+
+    private AiRiskAnalysisBoundary buildManualFallbackDraft(
+            UUID orgId,
+            UUID divisionId,
+            UUID departmentId,
+            UUID riskManagerUserId,
+            String location,
+            MultipartFile image,
+            OrganizationClient.OrganizationAiContext orgContext,
+            Exception cause
+    ) {
+        int severity = 1;
+        int frequency = 1;
+        int score = scoringPolicy.calculateScore(severity, frequency);
+        String categoryCode = firstCategoryCode(orgContext);
+        String categoryName = resolveCategoryName(categoryCode, null, orgContext == null ? List.of() : orgContext.categories());
+
+        AiRiskAnalysisEntity fallback = new AiRiskAnalysisEntity();
+        fallback.setOrgId(orgId);
+        fallback.setDivisionId(divisionId);
+        fallback.setDepartmentId(departmentId);
+        fallback.setRiskManagerUserId(riskManagerUserId);
+        fallback.setOriginalFilename(image.getOriginalFilename());
+        fallback.setContentType(image.getContentType());
+        fallback.setFileSize(image.getSize());
+        fallback.setAiProvider("MANUAL_FALLBACK");
+        fallback.setPromptVersion("v1-fallback");
+        fallback.setStatus(AnalysisStatus.DRAFT_READY);
+        fallback.setHazardDetected(true);
+        fallback.setConfidence(0.0);
+        fallback.setOrgContextJson(orgContext == null ? null : writeJson(orgContext));
+        fallback.setRawAiResponseJson(writeJson(new ErrorDetails(cause.getClass().getSimpleName(), cause.getMessage())));
+        fallback.setlocation(location);
+        fallback.setSuggestedTitle("סיכון מתמונה - נדרש תיאור ידני");
+        fallback.setSuggestedDescription("שירות ה-AI אינו זמין כרגע או החזיר שגיאה. נוצרה טיוטה ידנית לעריכה לפי התמונה.");
+        fallback.setSuggestedCategoryCode(categoryCode);
+        fallback.setSuggestedCategoryName(categoryName);
+        fallback.setSuggestedSeverityLevel(severity);
+        fallback.setSuggestedFrequencyLevel(frequency);
+        fallback.setSuggestedScore(score);
+        fallback.setSuggestedClassification(scoringPolicy.calculateClassification(score));
+        fallback.setSuggestedMitigations(List.of("בדיקה ידנית של המפגע בתמונה והגדרת פעולה מתקנת מתאימה"));
+        repository.save(fallback);
+        return toBoundary(fallback);
+    }
+
+    private record ErrorDetails(String type, String message) {}
 
     @Override
     public AiRiskAnalysisBoundary getById(UUID analysisId) {
@@ -421,6 +479,20 @@ public class AiRiskAnalysisServiceImpl implements AiRiskAnalysisService {
 
         if (categoryName != null && !categoryName.isBlank()) {
             return categoryName;
+        }
+
+        return null;
+    }
+
+    private String firstCategoryCode(OrganizationClient.OrganizationAiContext orgContext) {
+        if (orgContext == null || orgContext.categories() == null) {
+            return null;
+        }
+
+        for (OrganizationClient.CategoryRemoteBoundary category : orgContext.categories()) {
+            if (category.code() != null && !category.code().isBlank()) {
+                return category.code();
+            }
         }
 
         return null;

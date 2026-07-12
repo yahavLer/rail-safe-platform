@@ -72,11 +72,11 @@ public class OrganizationServiceImpl implements OrganizationService {
         assertOrgExists(orgId);
 
         List<LevelDefinitionBoundary> freq = freqRepo.findByOrganization_IdOrderByLevelAsc(orgId).stream()
-                .map(e -> toLevelBoundary(e.getLevel(), e.getLabel(), e.getDescription()))
+                .map(e -> toFrequencyLevelBoundary(e.getLevel(), e.getDescription()))
                 .toList();
 
         List<LevelDefinitionBoundary> sev = sevRepo.findByOrganization_IdOrderByLevelAsc(orgId).stream()
-                .map(e -> toLevelBoundary(e.getLevel(), e.getLabel(), e.getDescription()))
+                .map(e -> toSeverityLevelBoundary(e.getLevel(), e.getDescription()))
                 .toList();
 
         // Safety check: ensure exactly 4 levels exist
@@ -181,38 +181,34 @@ public class OrganizationServiceImpl implements OrganizationService {
     // ------------------- Helpers -------------------
 
     private void initDefaultFrequencyLevels(OrganizationEntity org) {
-        // Fixed mapping you requested:
-        // 4 - מדי פעם, 3 - תדירות נמוכה, 2 - לא סביר, 1 - נדיר
-        createFreq(org, 4, "מדי פעם");
-        createFreq(org, 3, "תדירות נמוכה");
-        createFreq(org, 2, "לא סביר");
-        createFreq(org, 1, "נדיר");
+        createFreq(org, 4, frequencyLabel(4), frequencyDescription(4));
+        createFreq(org, 3, frequencyLabel(3), frequencyDescription(3));
+        createFreq(org, 2, frequencyLabel(2), frequencyDescription(2));
+        createFreq(org, 1, frequencyLabel(1), frequencyDescription(1));
     }
 
     private void initDefaultSeverityLevels(OrganizationEntity org) {
-        // Fixed mapping you requested:
-        // 4 - אסון, 3 - קריטי גבוה, 2 - בינוני גבולי, 1 - זניח
-        createSev(org, 4, "אסון");
-        createSev(org, 3, "קריטי גבוה");
-        createSev(org, 2, "בינוני גבולי");
-        createSev(org, 1, "זניח");
+        createSev(org, 4, severityLabel(4), severityDescription(4));
+        createSev(org, 3, severityLabel(3), severityDescription(3));
+        createSev(org, 2, severityLabel(2), severityDescription(2));
+        createSev(org, 1, severityLabel(1), severityDescription(1));
     }
 
-    private void createFreq(OrganizationEntity org, int level, String label) {
+    private void createFreq(OrganizationEntity org, int level, String label, String description) {
         FrequencyLevelDefinitionEntity e = new FrequencyLevelDefinitionEntity();
         e.setOrganization(org);
         e.setLevel(level);
         e.setLabel(label);
-        e.setDescription(""); // start empty; manager will fill later
+        e.setDescription(description);
         freqRepo.save(e);
     }
 
-    private void createSev(OrganizationEntity org, int level, String label) {
+    private void createSev(OrganizationEntity org, int level, String label, String description) {
         SeverityLevelDefinitionEntity e = new SeverityLevelDefinitionEntity();
         e.setOrganization(org);
         e.setLevel(level);
         e.setLabel(label);
-        e.setDescription("");
+        e.setDescription(description);
         sevRepo.save(e);
     }
 
@@ -239,6 +235,58 @@ public class OrganizationServiceImpl implements OrganizationService {
         String trailingDigits = clean.replaceFirst("^.*?(\\d+)$", "$1");
         if (trailingDigits.matches("\\d+")) return Integer.parseInt(trailingDigits);
         return 0;
+    }
+
+    private LevelDefinitionBoundary toFrequencyLevelBoundary(int level, String description) {
+        return toLevelBoundary(level, frequencyLabel(level), hasText(description) ? description : frequencyDescription(level));
+    }
+
+    private LevelDefinitionBoundary toSeverityLevelBoundary(int level, String description) {
+        return toLevelBoundary(level, severityLabel(level), hasText(description) ? description : severityDescription(level));
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private String frequencyLabel(int level) {
+        return switch (level) {
+            case 4 -> "מדי פעם";
+            case 3 -> "נמוכה";
+            case 2 -> "לא סביר";
+            case 1 -> "נדיר";
+            default -> "רמה " + level;
+        };
+    }
+
+    private String frequencyDescription(int level) {
+        return switch (level) {
+            case 4 -> "X > 10^-3 — בערך אחת לחודש או יותר.";
+            case 3 -> "10^-4 < X <= 10^-3 — בין אחת לחודש לאחת לשנה.";
+            case 2 -> "10^-5 < X <= 10^-4 — בין אחת לשנה לאחת ל-10 שנים.";
+            case 1 -> "X <= 10^-5 — מעל 10 שנים.";
+            default -> "";
+        };
+    }
+
+    private String severityLabel(int level) {
+        return switch (level) {
+            case 4 -> "אסון";
+            case 3 -> "קריטי / גבוהה";
+            case 2 -> "בינוני / גבולי";
+            case 1 -> "זניח";
+            default -> "רמה " + level;
+        };
+    }
+
+    private String severityDescription(int level) {
+        return switch (level) {
+            case 4 -> "FWSI >= 10 — הרוגים מרובים ו/או נזק ישיר לרכוש מעל 65 מיליון ₪.";
+            case 3 -> "1 <= FWSI < 10 — מספר נמוך של הרוגים ו/או נזק ישיר לרכוש בין 7 ל-65 מיליון ₪.";
+            case 2 -> "0.1 <= FWSI < 1 — מספר פצועים קשה ו/או נזק ישיר לרכוש בין 1 ל-7 מיליון ₪.";
+            case 1 -> "FWSI < 0.1 — פציעה קלה ו/או נזק ישיר נמוך.";
+            default -> "";
+        };
     }
 
     private void assertOrgExists(UUID orgId) {

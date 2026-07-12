@@ -33,6 +33,8 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public TaskBoundary create(CreateTaskBoundary input) {
+        validateRecurrence(input.isRecurring(), input.getRecurrenceInterval(), input.getRecurrenceUnit());
+
         TaskEntity e = TaskEntity.builder()
                 .orgId(input.getOrgId())
                 .riskId(input.getRiskId())
@@ -40,6 +42,9 @@ public class TaskServiceImpl implements TaskService {
                 .title(input.getTitle())
                 .description(input.getDescription())
                 .dueDate(input.getDueDate())
+                .recurring(input.isRecurring())
+                .recurrenceInterval(input.getRecurrenceInterval())
+                .recurrenceUnit(input.getRecurrenceUnit())
                 .status(TaskStatus.TODO)
                 .build();
 
@@ -80,6 +85,10 @@ public class TaskServiceImpl implements TaskService {
         if (input.getTitle() != null) e.setTitle(input.getTitle());
         if (input.getDescription() != null) e.setDescription(input.getDescription());
         if (input.getDueDate() != null) e.setDueDate(input.getDueDate());
+        if (input.getRecurring() != null) e.setRecurring(input.getRecurring());
+        if (input.getRecurrenceInterval() != null) e.setRecurrenceInterval(input.getRecurrenceInterval());
+        if (input.getRecurrenceUnit() != null) e.setRecurrenceUnit(input.getRecurrenceUnit());
+        validateRecurrence(e.isRecurring(), e.getRecurrenceInterval(), e.getRecurrenceUnit());
 
         return toBoundary(repo.save(e));
     }
@@ -117,6 +126,16 @@ public class TaskServiceImpl implements TaskService {
                 .collect(Collectors.groupingBy(TaskEntity::getStatus, Collectors.counting()));
     }
 
+    private void validateRecurrence(boolean recurring, Integer interval, Object unit) {
+        if (!recurring) return;
+        if (interval == null || interval <= 0) {
+            throw new IllegalArgumentException("recurrenceInterval must be positive when recurring is enabled");
+        }
+        if (unit == null) {
+            throw new IllegalArgumentException("recurrenceUnit is required when recurring is enabled");
+        }
+    }
+
     // ------------------- mapper -------------------
 
     private TaskBoundary toBoundary(TaskEntity e) {
@@ -129,6 +148,9 @@ public class TaskServiceImpl implements TaskService {
         b.setDescription(e.getDescription());
         b.setStatus(e.getStatus());
         b.setDueDate(e.getDueDate());
+        b.setRecurring(e.isRecurring());
+        b.setRecurrenceInterval(e.getRecurrenceInterval());
+        b.setRecurrenceUnit(e.getRecurrenceUnit());
         b.setCreatedAt(e.getCreatedAt());
         b.setUpdatedAt(e.getUpdatedAt());
         return b;

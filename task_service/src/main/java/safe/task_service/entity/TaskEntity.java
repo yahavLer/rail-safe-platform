@@ -2,6 +2,7 @@ package safe.task_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import safe.task_service.enums.RecurrenceUnit;
 import safe.task_service.enums.TaskStatus;
 
 import java.time.Instant;
@@ -62,6 +63,17 @@ public class TaskEntity {
      * Optional due date as timestamp (could also be LocalDate).
      */
     private Instant dueDate;
+
+    @Builder.Default
+    @Column(name = "recurring")
+    private boolean recurring = false;
+
+    @Column(name = "recurrence_interval")
+    private Integer recurrenceInterval;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "recurrence_unit")
+    private RecurrenceUnit recurrenceUnit;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;

@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
+import safe.task_service.enums.RecurrenceUnit;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -29,4 +31,9 @@ public class CreateTaskBoundary {
     private String description;
 
     private Instant dueDate;
+
+    private boolean recurring = false;
+    private Integer recurrenceInterval;
+    private RecurrenceUnit recurrenceUnit;
 }
+

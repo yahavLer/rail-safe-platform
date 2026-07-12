@@ -3,6 +3,8 @@ package safe.task_service.boundaries;
 import lombok.Getter;
 import lombok.Setter;
 
+import safe.task_service.enums.RecurrenceUnit;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -17,4 +19,8 @@ public class UpdateTaskBoundary {
     private String title;
     private String description;
     private Instant dueDate;
+    private Boolean recurring;
+    private Integer recurrenceInterval;
+    private RecurrenceUnit recurrenceUnit;
 }
+
